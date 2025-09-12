@@ -6,12 +6,12 @@ common:
   lr: 0.0005
   num_workers: 2
 
-# dataset specific – SHA is the official Tiny-ImageNet tarball checksum
-# (same as in the original single-file script)
+# Dataset specific – use the official Stanford CS231n mirror
 datasets:
   tiny_imagenet:
-    url: "https://tiny-imagenet.herokuapp.com/tiny-imagenet-200.zip"
-    sha256: "5c1bfa179b8c1a1d7a2c89eacdd5b43b4d6de77a288a77670596e14d1f6a0d09"
+    url: "http://cs231n.stanford.edu/tiny-imagenet-200.zip"
+    sha256: "90528d7ca1a48142e3416d4ddf2d29d2852639a6d3df1497164fb629ecd0fe5e"
+    subset_size: 1000  # drastically speeds up the CI smoke test (<3 min)
 
 models:
   mobilenet_v2: "google/mobilenet_v2_0.75_160"

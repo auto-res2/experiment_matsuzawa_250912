@@ -6,11 +6,10 @@ common:
   lr: 0.0001
   num_workers: 8
 
-# Re-use same archive but parameters allow for bigger batch/epochs
 datasets:
   tiny_imagenet:
-    url: "https://tiny-imagenet.herokuapp.com/tiny-imagenet-200.zip"
-    sha256: "5c1bfa179b8c1a1d7a2c89eacdd5b43b4d6de77a288a77670596e14d1f6a0d09"
+    url: "http://cs231n.stanford.edu/tiny-imagenet-200.zip"
+    sha256: "90528d7ca1a48142e3416d4ddf2d29d2852639a6d3df1497164fb629ecd0fe5e"
 
 models:
   mobilenet_v2: "google/mobilenet_v2_0.75_160"

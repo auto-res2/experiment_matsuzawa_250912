@@ -8,11 +8,9 @@ authors = [
   { name = "Researcher", email = "research@example.com" }
 ]
 
-# Dependencies must be an *array* – NOT a mapping – to comply with task
-# instructions.
 dependencies = [
-  "torch>=1.9.0",
-  "torchvision>=0.10.0",
+  "torch>=2.0.0",              # new major version required by transformers 4.56
+  "torchvision>=0.15.0",
   "transformers>=4.28.0",
   "datasets>=2.10.0",
   "tqdm>=4.64.0",
@@ -20,3 +18,4 @@ dependencies = [
   "PyYAML>=6.0",
   "matplotlib>=3.5.0"
 ]
+

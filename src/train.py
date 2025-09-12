@@ -2,22 +2,47 @@
 train.py
 ===========
 All training-specific utilities are collected here so that they can be
-re-used by every experiment.  Nothing in this file should perform any
-expensive work when it is imported – that is handled by `src.main`.
+re-used by every experiment.  Nothing in this file performs heavy work on
+import – that is handled by `src.main`.
 """
 from __future__ import annotations
+
+from typing import List
 
 import torch
 from torch import nn
 import tqdm
-from typing import Dict
 
+# ---------------------------------------------------------------------------
+# Public symbols
+# ---------------------------------------------------------------------------
+
+__all__: List[str] = [
+    "train_one_epoch",
+    "evaluate",
+]
+
+# ---------------------------------------------------------------------------
+# Helpers
+# ---------------------------------------------------------------------------
 
 def _accuracy(logits: torch.Tensor, labels: torch.Tensor) -> float:
-    """Top-1 accuracy helper (private; exported via evaluate.py)."""
+    """Top-1 accuracy (private helper; exposed via evaluate/evaluate).
+
+    Parameters
+    ----------
+    logits : torch.Tensor
+        Model outputs of shape ``[B, C]``.
+    labels : torch.Tensor
+        Integer class indices of shape ``[B]``.
+    """
     preds = torch.argmax(logits, dim=1)
     return (preds == labels).float().mean().item()
 
+
+# ---------------------------------------------------------------------------
+# Public API
+# ---------------------------------------------------------------------------
 
 def train_one_epoch(
     model: nn.Module,
@@ -25,13 +50,13 @@ def train_one_epoch(
     optimiser: torch.optim.Optimizer,
     device: torch.device | str,
 ) -> float:
-    """Standard supervised training loop for one epoch.
+    """Train ``model`` for a single epoch.
 
     Returns
     -------
     float
-        Average accuracy computed on the *training* batches (purely for a
-        coarse sanity-check; proper validation happens outside).
+        Average *training* accuracy (coarse sanity check only).  Proper
+        validation must be performed outside this function.
     """
     model.train()
     criterion = nn.CrossEntropyLoss()

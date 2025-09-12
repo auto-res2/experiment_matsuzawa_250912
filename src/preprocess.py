@@ -1,12 +1,9 @@
 """
 preprocess.py
 =============
-All data-loading and preprocessing logic.  The original monolithic script
-supported several datasets and verified downloads.  The *essential* parts
-needed for the public reproducibility suite are preserved here.  The code
-is intentionally strict: if a required archive cannot be downloaded or
-its checksum mismatches, execution is aborted (NO FALLBACK) – exactly as
-in the single-file reference implementation.
+All data-loading and preprocessing logic.  The code is intentionally
+strict: if a required archive cannot be downloaded or its checksum
+mismatches, execution is aborted (NO FALLBACK).
 """
 from __future__ import annotations
 
@@ -23,7 +20,7 @@ import requests
 import torch
 import torchvision
 import torchvision.transforms as T
-from torch.utils.data import DataLoader
+from torch.utils.data import DataLoader, Subset
 
 import yaml
 
@@ -44,7 +41,6 @@ def _load_yaml(path: str | Path) -> dict:
 # ---------------------------------------------------------------------------
 # Verified download utilities (SHA-256 enforced, NO FALLBACK)
 # ---------------------------------------------------------------------------
-
 
 def _sha256(path: Path, block: int = 65536) -> str:
     h = hashlib.sha256()
@@ -89,8 +85,24 @@ def extract(archive: Path, dest: Path):
         sys.exit("ERROR: unsupported archive format – abort")
 
 # ---------------------------------------------------------------------------
-# Dataset access – Tiny-ImageNet as minimal example that matches the paper.
+# Dataset access – Tiny-ImageNet as minimal reproducible example.
 # ---------------------------------------------------------------------------
+
+def _wrap_dict(ds: torch.utils.data.Dataset) -> torch.utils.data.Dataset:
+    """Return a *dict*-style view so that training code can stay framework-agnostic."""
+
+    class _Dict(torch.utils.data.Dataset):
+        def __init__(self, base: torch.utils.data.Dataset):
+            self.base = base
+
+        def __len__(self):
+            return len(self.base)
+
+        def __getitem__(self, idx):
+            img, label = self.base[idx]
+            return {"image": img, "label": torch.tensor(label, dtype=torch.long)}
+
+    return _Dict(ds)
 
 
 def get_tiny_imagenet_dataloader(
@@ -116,6 +128,13 @@ def get_tiny_imagenet_dataloader(
         ]
     )
     ds.transform = tfms
+
+    # Optional sub-sampling for super-fast CI smoke tests.
+    subset_size = cfg["datasets"]["tiny_imagenet"].get("subset_size")
+    if subset_size is not None and subset_size < len(ds):
+        ds = Subset(ds, list(range(subset_size)))
+
+    ds = _wrap_dict(ds)
 
     return DataLoader(
         ds,
