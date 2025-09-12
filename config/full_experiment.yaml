@@ -1,0 +1,5 @@
+# config/full_experiment.yaml
+experiment_name: "full_experiment"
+# In a real run you would swap in the QuADRoN checkpoint for each domain.
+model_name: "t5-base"
+router_temperature: 1.0

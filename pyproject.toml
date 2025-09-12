@@ -1,0 +1,32 @@
+[project]
+name = "quadron_dm_experiment"
+version = "0.1.0"
+description = "Reproducible benchmark for QuADRoN-DM surrogate experiments"
+readme = "README.md"
+requires-python = ">=3.9"
+authors = [
+  { name = "Researcher", email = "research@example.com" }
+]
+
+# --------------------------------------------------------------------------
+# Mandatory dependencies.  Keep the list minimal for CI; heavy GPU-specific
+# libraries like bitsandbytes are optional and only installed when supported.
+# --------------------------------------------------------------------------
+
+dependencies = [
+  "torch>=2.0,<3.0",
+  "transformers>=4.38",
+  "sacrebleu>=2.3",
+  "matplotlib>=3.7",
+  "seaborn>=0.12",
+  "pyyaml>=6.0",
+  "pynvml>=11.4; platform_system=='Linux'",  # harmless no-op on CPU boxes
+  "bitsandbytes>=0.41; platform_system=='Linux' and platform_machine in 'x86_64'",  # optional
+]
+
+[project.scripts]
+quadron-experiment = "src.main:cli_entry"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+

@@ -56,6 +56,7 @@ def measure_energy_usec():
 # BLEU / latency / energy
 # ---------------------------------------------------------------------------
 
+
 def evaluate_translation(
     model: SuperSurrogate, src: List[str], tgt: List[str], cfg: ExperimentConfig
 ) -> dict:
@@ -84,7 +85,7 @@ def evaluate_translation(
     # ------------------------------------------------------------------
     # store JSON in research folder & print to stdout for verification
     # ------------------------------------------------------------------
-    research_dir = os.path.join(".research", "iteration3")
+    research_dir = os.path.join(".research", "iteration4")
     os.makedirs(research_dir, exist_ok=True)
     json_path = os.path.join(research_dir, f"{cfg.experiment_name}.json")
     with open(json_path, "w", encoding="utf-8") as fp:
@@ -97,8 +98,9 @@ def evaluate_translation(
 
 
 # ---------------------------------------------------------------------------
-# plotting – saved under .research/iteration3/images
+# plotting – saved under .research/iteration4/images
 # ---------------------------------------------------------------------------
+
 
 def bar_plot(metric_dict: dict, metric_key: str, title: str, file_stem: str) -> str:
     """Generate a simple bar plot and return the file path."""
@@ -121,7 +123,7 @@ def bar_plot(metric_dict: dict, metric_key: str, title: str, file_stem: str) -> 
     plt.xticks(rotation=45)
     plt.tight_layout()
 
-    images_dir = os.path.join(".research", "iteration3", "images")
+    images_dir = os.path.join(".research", "iteration4", "images")
     os.makedirs(images_dir, exist_ok=True)
     pdf_path = os.path.join(images_dir, f"{file_stem}.pdf")
     plt.savefig(pdf_path, bbox_inches="tight")

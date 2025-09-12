@@ -8,13 +8,26 @@ runtime stable after the refactor (see comments).
 from __future__ import annotations
 
 import os
+from types import ModuleType
 from typing import Any, Tuple
 
+import importlib
 import torch
 from torch import nn
 
-# low-precision kernels (BitsAndBytes 4-/8-bit linear layers)
-import bitsandbytes as bnb  # noqa: E402
+# -----------------------------------------------------------------------------
+# Optional bitsandbytes import (CPUs or minimal CI runners often lack CUDA).
+# A single import attempt wrapped in ``try/except`` keeps the namespace clean
+# and avoids the "variable redefined" issue that mypy raised previously.
+# -----------------------------------------------------------------------------
+try:
+    import bitsandbytes as _bnb_mod  # noqa: WPS433 – optional heavy import
+
+    bnb: ModuleType = _bnb_mod  # expose under the short alias expected below
+    _BNB_AVAILABLE = True
+except Exception:  # pragma: no cover – uncommon environment without bnb
+    bnb = None  # type: ignore[assignment]
+    _BNB_AVAILABLE = False
 
 from transformers import AutoModelForSeq2SeqLM, AutoTokenizer
 
@@ -54,13 +67,20 @@ class SuperSurrogate(nn.Module):
             return  # already at requested bit-depth
 
         if bits == 16:
-            self.model.float()  # reload parameters to fp32/fp16 (depending on dtype)
+            # restore original full-precision tensors
+            self.model.float()
         else:
+            if not _BNB_AVAILABLE:
+                raise RuntimeError(
+                    "bitsandbytes is not available – cannot switch to low-precision weights. "
+                    "Install bitsandbytes or stay on 16-bit precision."
+                )
+
             # replace Linear layers by their 4-/8-bit counterparts from bitsandbytes
             for long_name, module in self.model.named_modules():
                 if isinstance(module, nn.Linear):
                     quant_cls = bnb.nn.Linear4bit if bits == 4 else bnb.nn.Linear8bitLt
-                    new_mod = quant_cls(
+                    new_mod = quant_cls(  # noqa: WPS437 – dynamic class selection
                         module.in_features,
                         module.out_features,
                         bias=module.bias is not None,
@@ -102,7 +122,9 @@ class SuperSurrogate(nn.Module):
     # generation / routing
     # ------------------------------------------------------------------
     @torch.inference_mode()
-    def forward(self, text: str, *, router_temperature: float = 1.0, max_new_tokens: int = 60) -> str:  # noqa: D401,E501
+    def forward(
+        self, text: str, *, router_temperature: float = 1.0, max_new_tokens: int = 60
+    ) -> str:  # noqa: D401,E501
         """Translate *text* ⇒ German using a toy entropy-based router."""
         toks = self.tokenizer(text, return_tensors="pt").to(self.model.device)
 
@@ -127,7 +149,7 @@ class SuperSurrogate(nn.Module):
         Example: long_name == "encoder.layers.0.self_attn.q_proj".
         """
         components = long_name.split(".")
-        parent = self.model  # start from root
+        parent: nn.Module = self.model  # start from root
         for comp in components[:-1]:
             parent = getattr(parent, comp)
         return parent, components[-1]
@@ -137,7 +159,7 @@ class SuperSurrogate(nn.Module):
 # convenience factory (keeps train.py self-contained)
 # ----------------------------------------------------------------------
 
-def build_super_surrogate(model_name: str) -> SuperSurrogate:
+def build_super_surrogate(model_name: str) -> "SuperSurrogate":
     """Create a `SuperSurrogate` and move it to an available device."""
     hf_token = os.getenv(HF_TOKEN_ENV)
     device = "cuda" if torch.cuda.is_available() else "cpu"

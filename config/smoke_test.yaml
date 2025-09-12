@@ -1,0 +1,4 @@
+# config/smoke_test.yaml
+experiment_name: "smoke_test"
+model_name: "t5-small"  # tiny, downloads quickly
+router_temperature: 1.0
