@@ -7,7 +7,6 @@ authors = [
 ]
 requires-python = ">=3.9"
 
-# Correctly specify runtime dependencies as an ARRAY, not a mapping.
 dependencies = [
   "pyyaml>=6.0",
   "torch>=1.9.0",

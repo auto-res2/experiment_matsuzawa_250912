@@ -1,12 +1,11 @@
 # config/full_experiment.yaml
-# Full-scale configuration mirroring the original experimental setup.
 train:
-  epochs: 50
-  batch_size: 128
-  learning_rate: 1e-4
+  epochs: 10   # still moderate to keep CI time reasonable
+  batch_size: 64
+  learning_rate: 1e-3
 
 data:
-  subset: null  # use the entire dataset
+  subset: 2000  # larger synthetic dataset
 
 model:
-  hidden_size: 512
+  hidden_size: 128

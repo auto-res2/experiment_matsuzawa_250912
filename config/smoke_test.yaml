@@ -1,12 +1,11 @@
 # config/smoke_test.yaml
-# A very small configuration intended for CI-style smoke testing.
 train:
   epochs: 1
-  batch_size: 4
+  batch_size: 16
   learning_rate: 1e-3
 
 data:
-  subset: 100  # use only 100 samples for a quick run
+  subset: 100  # 100 samples for CI
 
 model:
   hidden_size: 32

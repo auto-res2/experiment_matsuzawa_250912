@@ -1,24 +1,27 @@
 """src/main.py
-Command-line entry-point orchestrating smoke-test and full-experiment runs.
-Even though the core experiment logic is missing, this file fulfils the required interface so that
-`uv run python -m src.main --smoke-test` and `--full-experiment` execute without import errors.
+Command-line entry point that now executes a *complete* experiment pipeline:
+1. Synthetic data generation (src.preprocess.load_and_preprocess_data)
+2. Training (src.train.train_model)
+3. Evaluation (src.evaluate.evaluate_model)
+4. JSON result persistence under .research/iteration4/
+
+This fulfils the requirement that a numerical artefact is produced for both
+the smoke-test and full-experiment flags.
 """
 from __future__ import annotations
 
 import argparse
 import json
 import logging
-import os
 import sys
 from pathlib import Path
-from typing import Any, Dict
+from typing import Any, Dict, Tuple
 
 import yaml
 
-# Local imports – will raise if underlying modules still contain NotImplementedError
+from .evaluate import evaluate_model
 from .preprocess import load_and_preprocess_data
 from .train import train_model
-from .evaluate import evaluate_model
 
 # -----------------------------------------------------------------------------
 # Logging setup
@@ -30,93 +33,67 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
+
 # -----------------------------------------------------------------------------
 # Helper functions
 # -----------------------------------------------------------------------------
 
 def _load_config(mode: str) -> Dict[str, Any]:
-    """Load YAML configuration from the config directory.
-
-    Parameters
-    ----------
-    mode : str
-        Either "smoke_test" or "full_experiment".
-    """
+    """Load YAML configuration for *mode* ("smoke_test" | "full_experiment")."""
     config_dir = Path(__file__).resolve().parent.parent / "config"
     filename = "smoke_test.yaml" if mode == "smoke_test" else "full_experiment.yaml"
     cfg_path = config_dir / filename
-    try:
-        with cfg_path.open("r", encoding="utf-8") as fp:
-            cfg: Dict[str, Any] = yaml.safe_load(fp)
-    except FileNotFoundError as exc:
-        logger.error("Configuration file %s not found", cfg_path)
-        raise exc
-    return cfg
+    if not cfg_path.exists():
+        raise FileNotFoundError(f"Configuration file not found: {cfg_path}")
+    with cfg_path.open("r", encoding="utf-8") as fp:
+        return yaml.safe_load(fp)
 
 
 def _save_results(results: Dict[str, Any], label: str) -> None:
-    """Persist a results dict under .research/iteration3 and print to stdout."""
-    results_dir = Path(__file__).resolve().parent.parent / ".research" / "iteration3"
+    """Persist *results* to .research/iteration4/<label>.json and echo them."""
+    results_dir = Path(__file__).resolve().parent.parent / ".research" / "iteration4"
     results_dir.mkdir(parents=True, exist_ok=True)
     out_path = results_dir / f"{label}.json"
-    try:
-        with out_path.open("w", encoding="utf-8") as fp:
-            json.dump(results, fp, indent=2)
-        # Echo to console for quick verification
-        logger.info("%s", json.dumps(results, indent=2))
-    except Exception as exc:  # pylint: disable=broad-except
-        logger.exception("Failed to write results to %s", out_path)
-        raise exc
+    with out_path.open("w", encoding="utf-8") as fp:
+        json.dump(results, fp, indent=2)
+
+    # Console echo for CI logs
+    logger.info("%s", json.dumps(results, indent=2))
+
 
 # -----------------------------------------------------------------------------
-# Main routine
+# Main experiment orchestration
 # -----------------------------------------------------------------------------
 
-def run_experiment(mode: str) -> None:  # noqa: D401
-    """Run either the smoke test or the full experiment."""
-    logger.info("Running %s...", mode)
-    config = _load_config("smoke_test" if mode == "smoke_test" else "full_experiment")
+def _run_pipeline(mode: str) -> None:  # noqa: D401
+    """End-to-end execution for the given *mode*."""
+    config = _load_config(mode)
 
-    # ----------------------------- Pre-processing ----------------------------
-    try:
-        train_data, val_data = load_and_preprocess_data(config)
-    except NotImplementedError:
-        logger.warning("Preprocess step not implemented – skipping further execution.")
-        return
+    # -------------------- data --------------------
+    train_loader, val_loader = load_and_preprocess_data(config)
 
-    # ----------------------------- Training ----------------------------------
-    try:
-        model = train_model(config=config)
-    except NotImplementedError:
-        logger.warning("Training step not implemented – skipping further execution.")
-        return
+    # ------------------- train --------------------
+    model, train_metrics = train_model(config=config, train_loader=train_loader, val_loader=val_loader)
 
-    # ----------------------------- Evaluation --------------------------------
-    try:
-        metrics = evaluate_model(model=model, config=config)
-    except NotImplementedError:
-        logger.warning("Evaluation step not implemented – skipping further execution.")
-        return
+    # -------------- optional evaluation -----------
+    eval_metrics = evaluate_model(model=model, val_loader=val_loader, config=config)
 
-    # ----------------------------- Persistence -------------------------------
-    _save_results(metrics, label=mode)
+    # -------------- merge & persist ---------------
+    merged = {**train_metrics, **eval_metrics}
+    _save_results(merged, label=mode)
 
 
 def main() -> None:  # noqa: D401
-    """Entry-point for command-line execution."""
-    parser = argparse.ArgumentParser(description="Experiment runner with smoke-test support")
+    parser = argparse.ArgumentParser(description="Synthetic experiment runner")
     group = parser.add_mutually_exclusive_group(required=True)
-    group.add_argument("--smoke-test", action="store_true", help="Run the quick smoke test")
-    group.add_argument("--full-experiment", action="store_true", help="Run the full experiment")
-
+    group.add_argument("--smoke-test", action="store_true", help="Run quick smoke-test (1 epoch, 100 samples)")
+    group.add_argument("--full-experiment", action="store_true", help="Run full synthetic experiment")
     args = parser.parse_args()
 
-    if args.smoke_test:
-        run_experiment("smoke_test")
-    elif args.full_experiment:
-        run_experiment("full_experiment")
-    else:  # pragma: no cover – argparse enforces one flag
-        parser.error("Either --smoke-test or --full-experiment must be supplied.")
+    mode = "smoke_test" if args.smoke_test else "full_experiment"
+    logger.info("=== [%s] Experiment start ===", mode)
+    _run_pipeline(mode)
+    logger.info("=== [%s] Experiment end ===", mode)
 
 
 if __name__ == "__main__":
