@@ -13,7 +13,6 @@ from __future__ import annotations
 
 import argparse
 import json
-import os
 import pathlib
 import sys
 from typing import Any, Dict
@@ -70,14 +69,17 @@ def _run(cfg_name: str):
             tasks = build_tasks(ds_name, max_tasks=cfg.get("max_tasks"))
             model = TigerLite()
 
-            # budgets may be a list (multiple settings) or a mapping.
-            budgets = cfg["budgets"][0] if isinstance(cfg["budgets"], list) else cfg["budgets"]
+            # budgets is a mapping for smoke-test, list for full experiment
+            if isinstance(cfg["budgets"], list):
+                budget = cfg["budgets"][0]  # take first for simplicity here
+            else:
+                budget = cfg["budgets"]
 
             try:
                 json_path, figs = continual_train(
                     model,
                     tasks,
-                    {**budgets, **cfg},
+                    {**budget, **cfg},
                     save_root / f"seed{seed}_{ds_name}",
                 )
             except ResourceViolation as err:
@@ -95,7 +97,6 @@ def _run(cfg_name: str):
 # -----------------------------------------------------------------------------
 #   Entry point
 # -----------------------------------------------------------------------------
-
 
 def main():
     args = _parse_args()

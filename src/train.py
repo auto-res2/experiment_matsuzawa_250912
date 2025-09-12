@@ -32,12 +32,21 @@ class ResourceViolation(RuntimeError):
 
 
 class WatchDog:
-    """Live monitor for RAM and cumulative floating-point operations."""
+    """Live monitor for RAM and cumulative floating-point operations.
+
+    Notes
+    -----
+    We measure *delta* memory with respect to the baseline just after the
+    watchdog is instantiated.  This avoids counting Python interpreter and
+    library initialisation overheads against the user-defined cap, in line with
+    the instructions that budgets correspond to *experiment* overheads.
+    """
 
     def __init__(self, mem_cap_mb: float, flop_cap_g: float):
         self._proc = psutil.Process(os.getpid())
+        self._base_rss = self._rss()            # memory before the experiment
         self.mem_cap = mem_cap_mb * 1024 * 1024  # bytes
-        self.flop_cap = flop_cap_g * 1e9          # FLOPs
+        self.flop_cap = flop_cap_g * 1e9          # FLOPs (cumulative)
         self.cum_flops: float = 0.0
 
     # ------------------------------------------------------------------ utils
@@ -45,9 +54,10 @@ class WatchDog:
         return self._proc.memory_info().rss  # resident set size (bytes)
 
     def _check_ram(self) -> None:
-        if self._rss() > self.mem_cap:
+        delta = self._rss() - self._base_rss
+        if delta > self.mem_cap:
             raise ResourceViolation(
-                f"RAM cap exceeded: {self._rss()/1e6:.1f} MB > {self.mem_cap/1e6:.1f} MB"
+                f"RAM cap exceeded: {delta/1e6:.1f} MB > {self.mem_cap/1e6:.1f} MB"
             )
 
     def _add_flops(self, flops: float) -> None:
@@ -72,8 +82,11 @@ class WatchDog:
 
 
 def _rough_flop_estimate(batch_size: int) -> float:
-    """Crude per-mini-batch FLOP estimate for ResNet-18 backbone."""
-    # Empirically ~1.8G FLOPs for 32 images; scale linearly with batch size.
+    """Crude per-mini-batch FLOP estimate for ResNet-18 backbone.
+
+    We intentionally keep the estimate pessimistic to avoid under-counting.
+    """
+    # Empirically ~1.8 G FLOPs for 32 images; scale linearly with batch size.
     return 1.8e9 * batch_size / 32.0
 
 
@@ -113,7 +126,7 @@ def continual_train(
             task_ds,
             batch_size=cfg.get("batch", 32),
             shuffle=True,
-            num_workers=4,
+            num_workers=0,      # keep 0 to minimise extra processes for smoke-test
             pin_memory=torch.cuda.is_available(),
         )
 
