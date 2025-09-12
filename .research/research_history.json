@@ -6,5 +6,82 @@
     "episodic memory compression",
     "continual learning quantization",
     "parameter pruning continual learning"
+  ],
+  "research_study_list": [
+    {
+      "title": "Contextual Transformation Networks for Online Continual Learning"
+    },
+    {
+      "title": "SparCL: Sparse Continual Learning on the Edge"
+    },
+    {
+      "title": "Computationally Budgeted Continual Learning: What Does Matter?"
+    },
+    {
+      "title": "Continual Learning in Low-rank Orthogonal Subspaces"
+    },
+    {
+      "title": "MECTA: Memory-Economic Continual Test-Time Model Adaptation"
+    },
+    {
+      "title": "Replay across Experiments: A Natural Extension of Off-Policy RL"
+    },
+    {
+      "title": "Replay Memory as An Empirical MDP: Combining Conservative Estimation with Experience Replay"
+    },
+    {
+      "title": "Sample-Efficient Reinforcement Learning by Breaking the Replay Ratio Barrier"
+    },
+    {
+      "title": "Sample-Efficient Reinforcement Learning by Breaking the Replay Ratio Barrier"
+    },
+    {
+      "title": "Improving Computational Efficiency in Visual Reinforcement Learning via Stored Embeddings"
+    },
+    {
+      "title": "Kanerva++: Extending the Kanerva Machine With Differentiable, Locally Block Allocated Latent Memory"
+    },
+    {
+      "title": "Predicting Event Memorability from Contextual Visual Semantics"
+    },
+    {
+      "title": "Model-Based Episodic Memory Induces Dynamic Hybrid Controls"
+    },
+    {
+      "title": "General Sequential Episodic Memory Model"
+    },
+    {
+      "title": "Meta-Learning Deep Energy-Based Memory Models"
+    },
+    {
+      "title": "Online Learned Continual Compression with Adaptive Quantization Modules"
+    },
+    {
+      "title": "Vector Quantization Prompting for Continual Learning"
+    },
+    {
+      "title": "Mitigating Forgetting in Online Continual Learning with  Neuron Calibration"
+    },
+    {
+      "title": "Uncertainty-guided Continual Learning with Bayesian Neural Networks"
+    },
+    {
+      "title": "Lifelong Domain Adaptation via Consolidated Internal Distribution"
+    },
+    {
+      "title": "Uncertainty-guided Continual Learning with Bayesian Neural Networks"
+    },
+    {
+      "title": "SparCL: Sparse Continual Learning on the Edge"
+    },
+    {
+      "title": "Bayesian Structural Adaptation for Continual Learning"
+    },
+    {
+      "title": "Long Live the Lottery: The Existence of Winning Tickets in Lifelong Learning"
+    },
+    {
+      "title": "Scalable and Order-robust Continual Learning with Additive Parameter Decomposition"
+    }
   ]
 }
