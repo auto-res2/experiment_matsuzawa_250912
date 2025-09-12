@@ -1,10 +1,9 @@
 # Full experimental configuration – will attempt to download / verify data.
-# NOTE: User must fill in *valid* dataset URL's and SHA-256 hashes.  Leaving
-# them empty will cause the run to terminate as per STRICT NO-FALLBACK RULE.
+# NOTE: User must fill in *valid* dataset URL's and SHA-256 hashes.
 
 experiment:
   name: cipher_omega_full_suite
-  output_dir: .research/iteration4
+  output_dir: .research/iteration5  # <-- mandatory directory
   random_seed: 42
 
 hardware:

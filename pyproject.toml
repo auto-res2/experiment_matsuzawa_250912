@@ -3,7 +3,6 @@ name = "cipher_omega"
 version = "0.1.0"
 requires-python = ">=3.9"
 
-# *Array* style dependency declaration is mandatory per task instructions.
 dependencies = [
   "pyyaml>=6.0",
   "tqdm>=4.64",

@@ -34,6 +34,7 @@ class MetricLogger:
 
     # ---------------------------------------------------------------------
     def _dump(self):
+        # Ensure target directory exists
         self._file.parent.mkdir(parents=True, exist_ok=True)
         with self._file.open("w", encoding="utf-8") as f:
             json.dump(self._metrics, f, indent=2)
@@ -42,8 +43,10 @@ class MetricLogger:
         print(json.dumps(self._metrics, indent=2))
         print("===================================\n")
 
+# -----------------------------------------------------------------------------
+# Global singleton helpers
+# -----------------------------------------------------------------------------
 
-# Global singleton instance – created via init_logger()
 LOGGER: Optional[MetricLogger] = None
 
 
@@ -56,6 +59,17 @@ def init_logger(out_path: Path):
         raise RuntimeError("Logger already initialised – double initialisation")
 
 
+def close_logger():
+    """Flush to disk/stdout and reset the global logger singleton."""
+    global LOGGER
+    if LOGGER is not None:
+        # Trigger explicit dump before discarding (atexit would also do it, but
+        # we need immediate persistence so that subsequent experiment phases do
+        # not overwrite the previous JSON).
+        LOGGER._dump()
+        LOGGER = None
+
+
 def log_metric(name: str, value: Any, tag: Union[str, int, None] = None):
     if LOGGER is None:
         raise RuntimeError("Logger not initialised; call init_logger() first")
@@ -63,8 +77,17 @@ def log_metric(name: str, value: Any, tag: Union[str, int, None] = None):
 
 
 # =============================================================================
-# Plotting helpers – All figures are saved as *PDF* to comply with the paper
+# Plotting helpers – All figures are saved under .research/iteration5/images
 # =============================================================================
+
+def _resolve_fig_path(filename: Path) -> Path:
+    """Force all figure paths to comply with mandatory directory structure."""
+    root = Path(".research/iteration5/images")
+    root.mkdir(parents=True, exist_ok=True)
+    # Keep only the stem provided by caller to avoid accidental directory
+    # traversals while still making filenames unique.
+    return root / f"{filename.stem}.pdf"
+
 
 def save_line_plot(
     x,
@@ -83,7 +106,6 @@ def save_line_plot(
     plt.title(title)
     plt.legend()
     plt.grid(True)
-    filename = filename.with_suffix(".pdf")
-    filename.parent.mkdir(parents=True, exist_ok=True)
-    plt.savefig(filename, bbox_inches="tight")
+    final_path = _resolve_fig_path(filename)
+    plt.savefig(final_path, bbox_inches="tight")
     plt.close()
