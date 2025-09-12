@@ -7,13 +7,13 @@ datasets:
       captions: "http://images.cocodataset.org/annotations/annotations_trainval2017.zip"
     split_caption_sample: 2000
     img_resolution: 512
+    enabled: true
   wmt22_en_zh:
-    url: "https://data.statmt.org/wmt22/translation-task/wmt22-corpus.tgz"
-    split_sentence_sample: 2000
-    max_tokens: 256
+    enabled: false  # disabled to avoid 404; not required by current experiments
   habitat_lite:
     git: "https://github.com/facebookresearch/habitat-sim"
     episodes: 40
+    enabled: false  # optional for current simplified experiments
 
 models:
   sd_lite:

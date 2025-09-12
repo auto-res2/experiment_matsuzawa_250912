@@ -7,6 +7,7 @@ from __future__ import annotations
 import hashlib
 import subprocess
 import tarfile
+import urllib.error
 import urllib.request
 import zipfile
 from pathlib import Path
@@ -31,7 +32,10 @@ def _download(url: str, dest: Path, sha256: str | None = None):
     if dest.exists():
         return
     with _ProgressBar(unit="B", unit_scale=True, miniters=1, desc=url.split("/")[-1]) as t:
-        urllib.request.urlretrieve(url, filename=dest, reporthook=t.update_to)
+        try:
+            urllib.request.urlretrieve(url, filename=dest, reporthook=t.update_to)
+        except urllib.error.HTTPError as exc:
+            raise RuntimeError(f"Failed to download {url}: {exc}") from exc
     if sha256 is not None:
         h = hashlib.sha256(dest.read_bytes()).hexdigest()
         if h != sha256:
@@ -57,33 +61,41 @@ def _extract(archive: Path, out_dir: Path):
 # ---------------------------------------------------------------------------
 
 def ensure_datasets_present(cfg: Dict[str, Any], data_root: Path):
+    """Download/extract datasets declared in *cfg* unless disabled.
+
+    A dataset section can be skipped by setting `enabled: false` in YAML.
+    """
     # -------------------- MS-COCO 2017 -----------------------------------
-    coco = cfg["datasets"]["coco2017"]
-    coco_img_zip = data_root / "coco_val2017.zip"
-    coco_ann_zip = data_root / "coco_ann2017.zip"
-    _download(coco["urls"]["images"], coco_img_zip)
-    _download(coco["urls"]["captions"], coco_ann_zip)
-    _extract(coco_img_zip, data_root / "coco2017" / "images")
-    _extract(coco_ann_zip, data_root / "coco2017" / "annotations")
+    coco = cfg["datasets"].get("coco2017", {})
+    if coco.get("enabled", True):
+        coco_img_zip = data_root / "coco_val2017.zip"
+        coco_ann_zip = data_root / "coco_ann2017.zip"
+        _download(coco["urls"]["images"], coco_img_zip)
+        _download(coco["urls"]["captions"], coco_ann_zip)
+        _extract(coco_img_zip, data_root / "coco2017" / "images")
+        _extract(coco_ann_zip, data_root / "coco2017" / "annotations")
 
     # -------------------- WMT22 EN-ZH ------------------------------------
-    wmt = cfg["datasets"]["wmt22_en_zh"]
-    wmt_tar = data_root / "wmt22.tgz"
-    _download(wmt["url"], wmt_tar)
-    _extract(wmt_tar, data_root / "wmt22")
+    wmt = cfg["datasets"].get("wmt22_en_zh", {})
+    if wmt.get("enabled", True):
+        wmt_tar = data_root / "wmt22.tgz"
+        _download(wmt["url"], wmt_tar)
+        _extract(wmt_tar, data_root / "wmt22")
 
     # -------------------- Habitat-Lite -----------------------------------
-    hab_dir = data_root / "habitat_lite"
-    if not hab_dir.exists():
-        print("[data] Cloning Habitat-Sim (lite)…")
-        subprocess.run(
-            [
-                "git",
-                "clone",
-                "--depth",
-                "1",
-                cfg["datasets"]["habitat_lite"]["git"],
-                str(hab_dir),
-            ],
-            check=True,
-        )
+    hab_cfg = cfg["datasets"].get("habitat_lite", {})
+    if hab_cfg.get("enabled", True):
+        hab_dir = data_root / "habitat_lite"
+        if not hab_dir.exists():
+            print("[data] Cloning Habitat-Sim (lite)…")
+            subprocess.run(
+                [
+                    "git",
+                    "clone",
+                    "--depth",
+                    "1",
+                    hab_cfg["git"],
+                    str(hab_dir),
+                ],
+                check=True,
+            )

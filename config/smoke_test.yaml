@@ -8,13 +8,11 @@ datasets:
       captions: "http://images.cocodataset.org/annotations/annotations_trainval2017.zip"
     split_caption_sample: 5  # <<-- drastically reduced
     img_resolution: 256
+    enabled: true
   wmt22_en_zh:
-    url: "https://data.statmt.org/wmt22/translation-task/wmt22-corpus.tgz"
-    split_sentence_sample: 20
-    max_tokens: 64
+    enabled: false  # skipped in smoke-test to avoid large / missing download
   habitat_lite:
-    git: "https://github.com/facebookresearch/habitat-sim"
-    episodes: 2
+    enabled: false  # skip heavy clone during CI
 
 models:
   sd_lite:

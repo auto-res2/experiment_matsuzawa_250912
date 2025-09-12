@@ -11,7 +11,7 @@ import json
 import os
 import sys
 from pathlib import Path
-from typing import Any, Dict, List
+from typing import Any, Dict
 
 import yaml
 
@@ -46,9 +46,9 @@ if not cfg_path.exists():
 CONFIG: Dict[str, Any] = yaml.safe_load(cfg_path.read_text())
 
 # ---------------------------------------------------------------------------
-#  Directory preparation (results / images live under .research/iteration6/…)
+#  Directory preparation (results / images live under .research/iteration7/…)
 # ---------------------------------------------------------------------------
-RESEARCH_DIR: Path = REPO_ROOT / ".research" / "iteration6"
+RESEARCH_DIR: Path = REPO_ROOT / ".research" / "iteration7"
 IMAGES_DIR: Path = RESEARCH_DIR / "images"
 RESULTS_DIR: Path = RESEARCH_DIR
 for d in (IMAGES_DIR, RESULTS_DIR):
@@ -105,7 +105,7 @@ for name, fn in EXPERIMENTS:
     print(description)
     print("\nResults:")
     print(json.dumps(result_json, indent=2))
-    print("Figures saved under .research/iteration6/images:")
+    print("Figures saved under .research/iteration7/images:")
     for fig in result_json.get("figures", []):
         print("  •", fig)
     print("=" * 80 + "\n")

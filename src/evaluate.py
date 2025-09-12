@@ -94,27 +94,29 @@ def save_bar(values: Dict[str, float], title: str, filename: Path):
 #  Experiment 1 – 24-h paired A/B trial (shortened but functional)
 # ---------------------------------------------------------------------------
 
-def run_experiment1(cfg: Dict[str, Any], repo_root: Path) -> Tuple[str, dict]:
+
+def run_experiment1(cfg: Dict[str, Any], images_dir: Path) -> Tuple[str, dict]:
+    """Generates a handful of Stable-Diffusion images and logs energy usage."""
     from diffusers import StableDiffusionPipeline
 
+    # ------------------------------------------------------------------
     sd_cfg = cfg["models"]["sd_lite"]
     pipe = StableDiffusionPipeline.from_pretrained(
         sd_cfg["hf_repo"], torch_dtype=torch.float16
     ).to("cuda")
 
-    # prompts from MS-COCO captions ------------------------------------------------
+    # ------------------------------------------------------------------
+    #  Load MS-COCO captions (val2017)
+    REPO_ROOT = Path(__file__).resolve().parents[1]
     coco_caps_file = (
-        repo_root
-        / "data"
-        / "coco2017"
-        / "annotations"
-        / "captions_val2017.json"
+        REPO_ROOT / "data" / "coco2017" / "annotations" / "captions_val2017.json"
     )
     captions_json = json.loads(coco_caps_file.read_text())
     captions = [el["caption"] for el in captions_json["annotations"]]
     sample_k = min(cfg["datasets"]["coco2017"]["split_caption_sample"], len(captions))
     prompts = random.sample(captions, k=sample_k)
 
+    # ------------------------------------------------------------------
     results = []
     for prompt in prompts:
         with EnergyMeter("GPU0") as em:
@@ -131,7 +133,7 @@ def run_experiment1(cfg: Dict[str, Any], repo_root: Path) -> Tuple[str, dict]:
     mean_j = sum(r["joule"] for r in results) / len(results)
     mean_t = sum(r["wall_s"] for r in results) / len(results)
 
-    fig_path = repo_root / "images" / "energy_per_sample.pdf"
+    fig_path = images_dir / "energy_per_sample.pdf"
     save_bar({"mean_joule": mean_j}, "Mean energy/sample (J)", fig_path)
 
     result_json = {
@@ -152,7 +154,8 @@ def run_experiment1(cfg: Dict[str, Any], repo_root: Path) -> Tuple[str, dict]:
 #  Experiment 2 – cold-start calibration benchmark
 # ---------------------------------------------------------------------------
 
-def run_experiment2(cfg: Dict[str, Any], repo_root: Path):
+
+def run_experiment2(cfg: Dict[str, Any], images_dir: Path):
     import time
     import torch
     import torch.nn as nn
@@ -178,7 +181,7 @@ def run_experiment2(cfg: Dict[str, Any], repo_root: Path):
             opt.zero_grad(); loss.backward(); opt.step()
         converge_t = time.time() - t0
 
-    fig_path = repo_root / "images" / "calibration_time.pdf"
+    fig_path = images_dir / "calibration_time.pdf"
     save_bar({"calib_time_s": converge_t}, "Calibration time (s)", fig_path)
 
     result_json = {
@@ -197,7 +200,8 @@ def run_experiment2(cfg: Dict[str, Any], repo_root: Path):
 #  Experiment 3 – UVEC safety-bound coverage
 # ---------------------------------------------------------------------------
 
-def run_experiment3(cfg: Dict[str, Any], repo_root: Path):
+
+def run_experiment3(cfg: Dict[str, Any], images_dir: Path):
     eps = 0.01
     kl_vals = [random.uniform(0.0, 0.2) for _ in range(400)]
     delta = cfg["hyperparameters"]["uvec_delta"]
@@ -211,7 +215,7 @@ def run_experiment3(cfg: Dict[str, Any], repo_root: Path):
     viol_rate = viol / len(kl_vals)
     tightness = sum((b - l) for b, l in zip(bounds, losses)) / sum(losses)
 
-    fig_path = repo_root / "images" / "uvec_violation_rate.pdf"
+    fig_path = images_dir / "uvec_violation_rate.pdf"
     save_bar({"violation_%": viol_rate * 100}, "UVEC violation %", fig_path)
 
     res = {
