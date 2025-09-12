@@ -1,0 +1,6 @@
+=== uv sync start Fri Sep 12 04:33:38 AM UTC 2025 ===
+=== uv install end Fri Sep 12 04:33:44 AM UTC 2025 ===
+=== [PHASE 1/2] Smoke test start Fri Sep 12 04:33:44 AM UTC 2025 ===
+[data] Extracting coco_val2017.zip …
+[data] Extracting coco_ann2017.zip …
+[WARN] ELECTRICITYMAP_TOKEN missing – carbon intensity will fall back to a static 500 gCO₂/kWh.
