@@ -133,9 +133,11 @@ class SuperSurrogate(nn.Module):
         toks = self.tokenizer(text, return_tensors="pt").to(self.model.device)
 
         # --- toy routing decision (very cheap) ---
-        logits = self.model.generate(
-            **toks, max_new_tokens=0, return_dict_in_generate=True
-        ).scores[0]
+        # transformers' generate() requires max_new_tokens > 0, so we use 1.
+        tiny_out = self.model.generate(
+            **toks, max_new_tokens=1, return_dict_in_generate=True
+        )
+        logits = tiny_out.scores[0]  # first-step logits
         ent = torch.distributions.Categorical(logits=logits / router_temperature).entropy()
         if ent.mean() > 4.0:  # ambiguous → take full-precision, full-width path
             self.set_precision(16)

@@ -20,8 +20,8 @@ dependencies = [
   "matplotlib>=3.7",
   "seaborn>=0.12",
   "pyyaml>=6.0",
-  "pynvml>=11.4; platform_system=='Linux'",  # harmless no-op on CPU boxes
-  "bitsandbytes>=0.41; platform_system=='Linux' and platform_machine in 'x86_64'",  # optional
+  "pynvml>=11.4; platform_system=='Linux'",
+  "bitsandbytes>=0.41; platform_system=='Linux' and platform_machine in 'x86_64'",
 ]
 
 [project.scripts]
@@ -29,4 +29,3 @@ quadron-experiment = "src.main:cli_entry"
 
 [tool.setuptools.packages.find]
 where = ["src"]
-
