@@ -1,0 +1,20 @@
+seed: 13
+device: "cuda"  # will automatically fall back to CPU if CUDA is unavailable
+
+datasets:
+  temporal_ogbn_products:
+    url: "https://snap.stanford.edu/ogb/data/node/ogbn_products.zip"
+    md5: ""
+  recsys_edge_24h:
+    url: "https://zenodo.org/record/8372214/files/recsys_edge_24h.tar.gz"
+  mobility_graph_dp:
+    url: "https://zenodo.org/record/8372231/files/mobility_graph_dp.tar.gz"
+
+hyperparams:
+  optim:
+    lr: 5.0e-4
+    weight_decay: 1.0e-4
+    betas: [0.9, 0.95]
+  training:
+    epochs: 2          # drastically reduced for quick validation
+    batch_size: 1024
