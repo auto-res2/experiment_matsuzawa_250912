@@ -1,0 +1,26 @@
+=== [PHASE 2/2] Full experiment start Fri Sep 12 04:04:32 AM UTC 2025 ===
+2025-09-12 04:04:34,311 | INFO | __main__: === [full_experiment] Experiment start ===
+2025-09-12 04:04:34,312 | INFO | src.preprocess: Generating synthetic dataset with 2000 samples…
+2025-09-12 04:04:34,565 | INFO | src.train: Training on device: cuda
+2025-09-12 04:04:35,925 | INFO | src.train: Starting training for 10 epoch(s)…
+2025-09-12 04:04:36,256 | INFO | src.train: Epoch 1/10 – loss: 0.6053  acc: 0.7569
+2025-09-12 04:04:36,292 | INFO | src.train: Epoch 2/10 – loss: 0.3788  acc: 0.9781
+2025-09-12 04:04:36,328 | INFO | src.train: Epoch 3/10 – loss: 0.2467  acc: 0.9856
+2025-09-12 04:04:36,364 | INFO | src.train: Epoch 4/10 – loss: 0.1686  acc: 0.9856
+2025-09-12 04:04:36,400 | INFO | src.train: Epoch 5/10 – loss: 0.1226  acc: 0.9875
+2025-09-12 04:04:36,436 | INFO | src.train: Epoch 6/10 – loss: 0.0946  acc: 0.9875
+2025-09-12 04:04:36,472 | INFO | src.train: Epoch 7/10 – loss: 0.0768  acc: 0.9875
+2025-09-12 04:04:36,508 | INFO | src.train: Epoch 8/10 – loss: 0.0652  acc: 0.9875
+2025-09-12 04:04:36,544 | INFO | src.train: Epoch 9/10 – loss: 0.0574  acc: 0.9875
+2025-09-12 04:04:36,580 | INFO | src.train: Epoch 10/10 – loss: 0.0517  acc: 0.9875
+2025-09-12 04:04:36,588 | INFO | src.train: Training complete.  Validation accuracy: 0.9750
+2025-09-12 04:04:36,592 | INFO | src.evaluate: Evaluation – loss: 0.0694  acc: 0.9750
+2025-09-12 04:04:36,593 | INFO | __main__: {
+  "train_loss": 0.08228038996458054,
+  "train_accuracy": 0.9875,
+  "val_loss": 0.06944262892007828,
+  "val_accuracy": 0.975,
+  "num_samples": 400
+}
+2025-09-12 04:04:36,594 | INFO | __main__: === [full_experiment] Experiment end ===
+=== [PHASE 2/2] Full experiment end Fri Sep 12 04:04:37 AM UTC 2025 ===
