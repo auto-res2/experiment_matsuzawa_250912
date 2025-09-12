@@ -13,7 +13,7 @@ catch exceptions originating from PyTorch.
 from __future__ import annotations
 
 import logging
-from typing import Dict, Tuple
+from typing import Dict, Tuple, Any
 
 import torch
 from torch import nn
@@ -35,6 +35,15 @@ class SimpleNet(nn.Module):  # noqa: D401
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:  # noqa: D401
         return self.net(x)
+
+
+def _to_float(value: Any, default: float) -> float:
+    """Utility that safely casts *value* to float with *default* fallback."""
+    try:
+        return float(value)
+    except (TypeError, ValueError):  # pragma: no cover – defensive guard
+        logger.warning("Unable to cast %r to float – using default=%s", value, default)
+        return float(default)
 
 
 def _train_one_epoch(  # noqa: D401
@@ -69,7 +78,7 @@ def _train_one_epoch(  # noqa: D401
 
 def train_model(  # noqa: D401
     *,
-    config: Dict[str, any],
+    config: Dict[str, Any],
     train_loader: DataLoader,
     val_loader: DataLoader,
 ) -> Tuple[nn.Module, Dict[str, float]]:
@@ -91,14 +100,23 @@ def train_model(  # noqa: D401
     """
 
     train_cfg = config.get("train", {})
-    hidden = config.get("model", {}).get("hidden_size", 32)
+    model_cfg = config.get("model", {})
+
+    hidden = int(model_cfg.get("hidden_size", 32))
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     logger.info("Training on device: %s", device)
 
     model = SimpleNet(input_dim=2, hidden_size=hidden).to(device)
     criterion = nn.CrossEntropyLoss()
-    optimiser = torch.optim.Adam(model.parameters(), lr=train_cfg.get("learning_rate", 1e-3))
+
+    # ------------------------------------------------------------------
+    # YAML interprets values like `1e-3` as *strings* under the 1.1 spec, so we
+    # need to convert them explicitly; otherwise `torch.optim.Adam` will throw a
+    # TypeError when comparing the passed value against 0.0.
+    # ------------------------------------------------------------------
+    lr = _to_float(train_cfg.get("learning_rate", 1e-3), default=1e-3)
+    optimiser = torch.optim.Adam(model.parameters(), lr=lr)
 
     epochs = int(train_cfg.get("epochs", 1))
     logger.info("Starting training for %d epoch(s)…", epochs)

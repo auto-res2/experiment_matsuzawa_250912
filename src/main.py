@@ -3,7 +3,7 @@ Command-line entry point that now executes a *complete* experiment pipeline:
 1. Synthetic data generation (src.preprocess.load_and_preprocess_data)
 2. Training (src.train.train_model)
 3. Evaluation (src.evaluate.evaluate_model)
-4. JSON result persistence under .research/iteration4/
+4. JSON result persistence under .research/iteration5/
 
 This fulfils the requirement that a numerical artefact is produced for both
 the smoke-test and full-experiment flags.
@@ -15,7 +15,7 @@ import json
 import logging
 import sys
 from pathlib import Path
-from typing import Any, Dict, Tuple
+from typing import Any, Dict
 
 import yaml
 
@@ -50,8 +50,8 @@ def _load_config(mode: str) -> Dict[str, Any]:
 
 
 def _save_results(results: Dict[str, Any], label: str) -> None:
-    """Persist *results* to .research/iteration4/<label>.json and echo them."""
-    results_dir = Path(__file__).resolve().parent.parent / ".research" / "iteration4"
+    """Persist *results* to .research/iteration5/<label>.json and echo them."""
+    results_dir = Path(__file__).resolve().parent.parent / ".research" / "iteration5"
     results_dir.mkdir(parents=True, exist_ok=True)
     out_path = results_dir / f"{label}.json"
     with out_path.open("w", encoding="utf-8") as fp:
