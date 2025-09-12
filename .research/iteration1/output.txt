@@ -1,0 +1,6 @@
+=== uv sync start Fri Sep 12 09:51:33 AM UTC 2025 ===
+=== uv install end Fri Sep 12 09:52:36 AM UTC 2025 ===
+=== [PHASE 1/2] Smoke test start Fri Sep 12 09:52:36 AM UTC 2025 ===
+[INFO] Using config: /home/toma/t-80-8-b-03/_work/experiment_matsuzawa_250912/experiment_matsuzawa_250912/config/smoke_test.yaml
+[DOWNLOAD] https://www.cs.toronto.edu/~kriz/cifar-100-python.tar.gz → /home/toma/t-80-8-b-03/_work/experiment_matsuzawa_250912/experiment_matsuzawa_250912/data/_raw/cifar-100-python.tar.gz
+[EXTRACT] /home/toma/t-80-8-b-03/_work/experiment_matsuzawa_250912/experiment_matsuzawa_250912/data/_raw/cifar-100-python.tar.gz → /home/toma/t-80-8-b-03/_work/experiment_matsuzawa_250912/experiment_matsuzawa_250912/data/cifar100_split10
