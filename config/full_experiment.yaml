@@ -1,35 +1,16 @@
-# Full experimental configuration – uses tiny public files so CI can run
-# without proprietary datasets.
+common:
+  data_dir: data
+  batch_size: 128
+  epochs_smoke: 1  # ignored in full mode
+  epochs_full: 30
+  lr: 0.0001
+  num_workers: 8
 
-experiment:
-  name: cipher_omega_full_suite
-  output_dir: .research/iteration6  # mandatory directory (updated)
-  random_seed: 42
-
-hardware:
-  gpus: 0  # keep CPU-only so that CI always succeeds
-  gpu_model: generic_cpu
-  ram_gb: 4
-  vram_gb: 0
-
+# Re-use same archive but parameters allow for bigger batch/epochs
 datasets:
-  # We point all three dataset entries to the same tiny Shakespeare corpus.
-  # This keeps the file very small (≈ 260 kB) and publicly accessible while
-  # still exercising the downloader+verifier logic.
-  hiddenbias_cars:
-    url: "https://raw.githubusercontent.com/karpathy/char-rnn/master/data/tinyshakespeare/input.txt"
-    sha256: ""  # checksum intentionally omitted – verification skipped
-    size_bytes: 0
-  intersect_faces:
-    url: "https://raw.githubusercontent.com/karpathy/char-rnn/master/data/tinyshakespeare/input.txt"
-    sha256: ""
-    size_bytes: 0
-  cubesat_drift:
-    url: "https://raw.githubusercontent.com/karpathy/char-rnn/master/data/tinyshakespeare/input.txt"
-    sha256: ""
-    size_bytes: 0
+  tiny_imagenet:
+    url: "https://tiny-imagenet.herokuapp.com/tiny-imagenet-200.zip"
+    sha256: "5c1bfa179b8c1a1d7a2c89eacdd5b43b4d6de77a288a77670596e14d1f6a0d09"
 
-train:
-  batch_size: 8
-  lr: 3.0e-4
-  epochs: 2
+models:
+  mobilenet_v2: "google/mobilenet_v2_0.75_160"

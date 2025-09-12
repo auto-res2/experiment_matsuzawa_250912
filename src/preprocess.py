@@ -1,101 +1,126 @@
 """
-preprocess.py – Data downloading and verification utilities.  These functions
-are purposely stringent: any uncertainty (missing URL, size or checksum) leads
-to an immediate, explicit RuntimeError in compliance with the paper‘s
-STRICT NO-FALLBACK RULE.
+preprocess.py
+=============
+All data-loading and preprocessing logic.  The original monolithic script
+supported several datasets and verified downloads.  The *essential* parts
+needed for the public reproducibility suite are preserved here.  The code
+is intentionally strict: if a required archive cannot be downloaded or
+its checksum mismatches, execution is aborted (NO FALLBACK) – exactly as
+in the single-file reference implementation.
 """
 from __future__ import annotations
 
 import hashlib
-import shutil
+import os
+import sys
 import tarfile
+import tempfile
+import zipfile
 from pathlib import Path
-from typing import Dict, Any
+from typing import Tuple
 
 import requests
-from tqdm import tqdm
+import torch
+import torchvision
+import torchvision.transforms as T
+from torch.utils.data import DataLoader
 
-__all__ = [
-    "DataUnavailableError",
-    "fetch_dataset",
-]
+import yaml
 
+# ---------------------------------------------------------------------------
+# Configuration helpers – the YAML files are the single source of truth.
+# ---------------------------------------------------------------------------
 
-class DataUnavailableError(RuntimeError):
-    """Raised when a dataset cannot be downloaded or verified."""
-
-
-# -----------------------------------------------------------------------------
-# Internal helpers
-# -----------------------------------------------------------------------------
-
-_CHUNK = 1 << 20  # 1 MiB
+_CFG_CACHE: dict[str, dict] = {}
 
 
-def _download(url: str, target: Path, expected_size: int, sha256: str):
-    """Download *url* → *target* and verify size / SHA-256 checksum."""
+def _load_yaml(path: str | Path) -> dict:
+    path = Path(path)
+    if path.as_posix() not in _CFG_CACHE:
+        with path.open() as fp:
+            _CFG_CACHE[path.as_posix()] = yaml.safe_load(fp)
+    return _CFG_CACHE[path.as_posix()]
 
-    with requests.get(url, stream=True, timeout=30) as r:
-        if r.status_code != 200:
-            raise DataUnavailableError(f"Cannot download {url} – HTTP {r.status_code}")
-        total = int(r.headers.get("content-length", 0))
-        if expected_size and total and total != expected_size:
-            raise DataUnavailableError("Remote file size mismatch – aborting.")
-
-        with target.open("wb") as f, tqdm(total=total, unit="B", unit_scale=True) as pbar:
-            for chunk in r.iter_content(chunk_size=_CHUNK):
-                f.write(chunk)
-                pbar.update(len(chunk))
-
-    # ---------------------------------------------------------------------
-    # Checksum verification
-    if sha256:
-        m = hashlib.sha256()
-        with target.open("rb") as f:
-            for chunk in iter(lambda: f.read(_CHUNK), b""):
-                m.update(chunk)
-        if m.hexdigest() != sha256.lower():
-            raise DataUnavailableError("SHA-256 mismatch – dataset corrupted.")
+# ---------------------------------------------------------------------------
+# Verified download utilities (SHA-256 enforced, NO FALLBACK)
+# ---------------------------------------------------------------------------
 
 
-# -----------------------------------------------------------------------------
-# Public API
-# -----------------------------------------------------------------------------
+def _sha256(path: Path, block: int = 65536) -> str:
+    h = hashlib.sha256()
+    with path.open("rb") as fp:
+        for chunk in iter(lambda: fp.read(block), b""):
+            h.update(chunk)
+    return h.hexdigest()
 
-def fetch_dataset(name: str, spec: Dict[str, Any], data_root: Path) -> Path:
-    """Download/extract *name* according to *spec* into *data_root*.
 
-    Returns the path to the extracted dataset.  Raises DataUnavailableError on
-    any failure.
-    """
+def fetch(url: str, sha256: str, dest_dir: Path) -> Path:
+    dest_dir.mkdir(parents=True, exist_ok=True)
+    fname = dest_dir / os.path.basename(url.split("?", 1)[0])
+    if fname.exists() and _sha256(fname) == sha256:
+        return fname
 
-    url: str | None = spec.get("url")
-    if not url:
-        raise DataUnavailableError(
-            f"Dataset '{name}' has no download URL – cannot continue."
-        )
+    print(f"Downloading {url} …", flush=True)
+    r = requests.get(url, stream=True, timeout=30)
+    if r.status_code != 200:
+        sys.exit(f"ERROR: {url} returned {r.status_code} – abort (NO FALLBACK)")
 
-    file_name = Path(url).name
-    dl_path = data_root / file_name
-    if not dl_path.exists():
-        _download(url, dl_path, spec.get("size_bytes", 0), spec.get("sha256", ""))
+    with tempfile.NamedTemporaryFile(delete=False) as tmp:
+        for chunk in r.iter_content(1024 * 1024):
+            tmp.write(chunk)
+    os.replace(tmp.name, fname)
 
-    # Auto-extract archives (optional, no-op for plain files) -------------
-    extract_dir = data_root / name
-    if tarfile.is_tarfile(dl_path):
-        with tarfile.open(dl_path) as tar:
-            tar.extractall(path=extract_dir)
-    elif dl_path.suffix == ".zip":
-        shutil.unpack_archive(str(dl_path), extract_dir=str(extract_dir))
+    if _sha256(fname) != sha256:
+        sys.exit("ERROR: SHA-256 mismatch – abort (NO FALLBACK)")
+    return fname
+
+
+def extract(archive: Path, dest: Path):
+    if dest.exists():
+        return
+    print(f"Extracting {archive} …", flush=True)
+    if tarfile.is_tarfile(archive):
+        with tarfile.open(archive) as tf:
+            tf.extractall(dest)
+    elif zipfile.is_zipfile(archive):
+        with zipfile.ZipFile(archive) as zf:
+            zf.extractall(dest)
     else:
-        # Plain file – just ensure directory exists and symlink/copy inside.
-        extract_dir.mkdir(parents=True, exist_ok=True)
-        target = extract_dir / file_name
-        if not target.exists():
-            # Use a hard-link if possible, fall back to copy.
-            try:
-                target.hardlink_to(dl_path)
-            except OSError:
-                shutil.copy2(dl_path, target)
+        sys.exit("ERROR: unsupported archive format – abort")
 
-    return extract_dir
+# ---------------------------------------------------------------------------
+# Dataset access – Tiny-ImageNet as minimal example that matches the paper.
+# ---------------------------------------------------------------------------
+
+
+def get_tiny_imagenet_dataloader(
+    cfg: dict,
+    train: bool = True,
+) -> DataLoader:
+    root = Path(cfg["common"]["data_dir"]) / "tiny_imagenet"
+    url = cfg["datasets"]["tiny_imagenet"]["url"]
+    sha = cfg["datasets"]["tiny_imagenet"]["sha256"]
+
+    archive = fetch(url, sha, root.parent)
+    extract(archive, root)
+
+    split = "train" if train else "val"
+    ds = torchvision.datasets.ImageFolder(root / split)
+
+    tfms = T.Compose(
+        [
+            T.Resize((224, 224)),
+            T.RandomCrop(224, padding=16) if train else T.CenterCrop(224),
+            T.ToTensor(),
+            T.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
+        ]
+    )
+    ds.transform = tfms
+
+    return DataLoader(
+        ds,
+        batch_size=cfg["common"]["batch_size"],
+        shuffle=train,
+        num_workers=cfg["common"].get("num_workers", 4),
+        pin_memory=torch.cuda.is_available(),
+    )

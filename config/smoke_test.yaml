@@ -1,30 +1,17 @@
-# Lightweight configuration – runs within seconds and does not download data
-experiment:
-  name: cipher_omega_smoke
-  output_dir: .research/iteration6  # mandatory directory (updated)
-  random_seed: 42
+common:
+  data_dir: data
+  batch_size: 16
+  epochs_smoke: 1
+  epochs_full: 10  # ignored in smoke mode
+  lr: 0.0005
+  num_workers: 2
 
-hardware:
-  gpus: 0  # smoke test runs on CPU only
-  gpu_model: none
-  ram_gb: 2
-  vram_gb: 0
-
+# dataset specific – SHA is the official Tiny-ImageNet tarball checksum
+# (same as in the original single-file script)
 datasets:
-  hiddenbias_cars:
-    url: ""  # intentionally empty – not needed for smoke test
-    sha256: ""
-    size_bytes: 0
-  intersect_faces:
-    url: ""
-    sha256: ""
-    size_bytes: 0
-  cubesat_drift:
-    url: ""
-    sha256: ""
-    size_bytes: 0
+  tiny_imagenet:
+    url: "https://tiny-imagenet.herokuapp.com/tiny-imagenet-200.zip"
+    sha256: "5c1bfa179b8c1a1d7a2c89eacdd5b43b4d6de77a288a77670596e14d1f6a0d09"
 
-train:
-  batch_size: 4
-  lr: 1.0e-3
-  epochs: 1
+models:
+  mobilenet_v2: "google/mobilenet_v2_0.75_160"

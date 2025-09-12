@@ -2,14 +2,21 @@
 name = "cipher_omega"
 version = "0.1.0"
 requires-python = ">=3.9"
-
-dependencies = [
-  "pyyaml>=6.0",
-  "tqdm>=4.64",
-  "requests>=2.31",
-  "matplotlib>=3.6"
+readme = "README.md"
+license = { text = "Apache-2.0" }
+authors = [
+  { name = "Researcher", email = "research@example.com" }
 ]
 
-[build-system]
-requires = ["setuptools>=65.0", "wheel"]
-build-backend = "setuptools.build_meta"
+# Dependencies must be an *array* – NOT a mapping – to comply with task
+# instructions.
+dependencies = [
+  "torch>=1.9.0",
+  "torchvision>=0.10.0",
+  "transformers>=4.28.0",
+  "datasets>=2.10.0",
+  "tqdm>=4.64.0",
+  "requests>=2.25.0",
+  "PyYAML>=6.0",
+  "matplotlib>=3.5.0"
+]
