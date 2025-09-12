@@ -11,4 +11,4 @@ experiment:
     - {mem_mb: 1.0,  flop_g: 1.0}
   epochs_per_task: 3
   batch: 32
-  save_dir: .research/iteration10/full
+  save_dir: .research/iteration11/full

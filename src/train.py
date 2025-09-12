@@ -142,10 +142,6 @@ def continual_train(
                     optimiser.step()
                     optimiser.zero_grad(set_to_none=True)
 
-                    # buffer update (may be a no-op depending on implementation)
-                    if hasattr(model, "buffer") and callable(getattr(model, "fisher_score", None)):
-                        model.buffer.maybe_add(model.fisher_score(loss), (x.cpu(), y.cpu()))
-
         # -------------------------- quick evaluation ------------------
         acc = evaluate_task(model, task_ds, device, task_id)
         metrics["task_acc"].append(acc)
