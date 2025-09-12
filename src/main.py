@@ -1,100 +1,111 @@
-"""src/main.py
-Command-line entry point that now executes a *complete* experiment pipeline:
-1. Synthetic data generation (src.preprocess.load_and_preprocess_data)
-2. Training (src.train.train_model)
-3. Evaluation (src.evaluate.evaluate_model)
-4. JSON result persistence under .research/iteration5/
-
-This fulfils the requirement that a numerical artefact is produced for both
-the smoke-test and full-experiment flags.
+"""
+main.py – command-line orchestrator
+Supports
+  uv run python -m src.main --smoke-test
+  uv run python -m src.main --full-experiment
 """
 from __future__ import annotations
 
 import argparse
 import json
-import logging
+import os
 import sys
 from pathlib import Path
-from typing import Any, Dict
+from typing import Any, Dict, List
 
 import yaml
 
-from .evaluate import evaluate_model
-from .preprocess import load_and_preprocess_data
-from .train import train_model
+# ---------------------------------------------------------------------------
+#  Locate repository root and make sure `src/` is importable as namespace pkg
+# ---------------------------------------------------------------------------
+REPO_ROOT: Path = Path(__file__).resolve().parents[1]
+SRC_ROOT: Path = REPO_ROOT / "src"
+if str(SRC_ROOT) not in sys.path:
+    sys.path.insert(0, str(SRC_ROOT))
 
-# -----------------------------------------------------------------------------
-# Logging setup
-# -----------------------------------------------------------------------------
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s | %(levelname)s | %(name)s: %(message)s",
-    handlers=[logging.StreamHandler(sys.stdout)],
+# ---------------------------------------------------------------------------
+#  CLI parsing – mutually-exclusive run-modes
+# ---------------------------------------------------------------------------
+parser = argparse.ArgumentParser(description="COSMOS-Diff experimental runner")
+mode = parser.add_mutually_exclusive_group(required=True)
+mode.add_argument("--smoke-test", action="store_true", help="run quick CI sanity-check")
+mode.add_argument("--full-experiment", action="store_true", help="run the full experimental suite")
+args = parser.parse_args()
+
+# ---------------------------------------------------------------------------
+#  Configuration loading
+# ---------------------------------------------------------------------------
+if args.smoke_test:
+    cfg_path = REPO_ROOT / "config" / "smoke_test.yaml"
+else:
+    cfg_path = REPO_ROOT / "config" / "full_experiment.yaml"
+
+if not cfg_path.exists():
+    raise FileNotFoundError(f"Config file not found: {cfg_path}")
+
+CONFIG: Dict[str, Any] = yaml.safe_load(cfg_path.read_text())
+
+# ---------------------------------------------------------------------------
+#  Directory preparation (results / images live under .research/iteration6/…)
+# ---------------------------------------------------------------------------
+RESEARCH_DIR: Path = REPO_ROOT / ".research" / "iteration6"
+IMAGES_DIR: Path = RESEARCH_DIR / "images"
+RESULTS_DIR: Path = RESEARCH_DIR
+for d in (IMAGES_DIR, RESULTS_DIR):
+    d.mkdir(parents=True, exist_ok=True)
+
+# ---------------------------------------------------------------------------
+#  Environment & dependency checks
+# ---------------------------------------------------------------------------
+from .preprocess import ensure_datasets_present
+from .train import EnergyMeter, MissingSensorError
+
+try:
+    ensure_datasets_present(CONFIG, REPO_ROOT / "data")
+except RuntimeError as exc:
+    print(f"[ERROR] Dataset acquisition failed – {exc}")
+    sys.exit(1)
+
+try:
+    _ = EnergyMeter.detect_available_backend()
+except MissingSensorError as exc:
+    print(f"[ERROR] {exc}")
+    sys.exit(1)
+
+if "ELECTRICITYMAP_TOKEN" not in os.environ:
+    print(
+        "[ERROR] Environment variable ELECTRICITYMAP_TOKEN missing – live grid-carbon data unavailable."
+    )
+    sys.exit(1)
+
+# ---------------------------------------------------------------------------
+#  Import experiments and run sequentially
+# ---------------------------------------------------------------------------
+from .evaluate import (
+    run_experiment1,
+    run_experiment2,
+    run_experiment3,
 )
-logger = logging.getLogger(__name__)
 
+EXPERIMENTS = [
+    ("exp1", run_experiment1),
+    ("exp2", run_experiment2),
+    ("exp3", run_experiment3),
+]
 
-# -----------------------------------------------------------------------------
-# Helper functions
-# -----------------------------------------------------------------------------
+for name, fn in EXPERIMENTS:
+    description, result_json = fn(CONFIG, IMAGES_DIR)
 
-def _load_config(mode: str) -> Dict[str, Any]:
-    """Load YAML configuration for *mode* ("smoke_test" | "full_experiment")."""
-    config_dir = Path(__file__).resolve().parent.parent / "config"
-    filename = "smoke_test.yaml" if mode == "smoke_test" else "full_experiment.yaml"
-    cfg_path = config_dir / filename
-    if not cfg_path.exists():
-        raise FileNotFoundError(f"Configuration file not found: {cfg_path}")
-    with cfg_path.open("r", encoding="utf-8") as fp:
-        return yaml.safe_load(fp)
+    # ----------------------- Persist JSON ------------------------------
+    out_file = RESULTS_DIR / f"{name}.json"
+    out_file.write_text(json.dumps(result_json, indent=2))
 
-
-def _save_results(results: Dict[str, Any], label: str) -> None:
-    """Persist *results* to .research/iteration5/<label>.json and echo them."""
-    results_dir = Path(__file__).resolve().parent.parent / ".research" / "iteration5"
-    results_dir.mkdir(parents=True, exist_ok=True)
-    out_path = results_dir / f"{label}.json"
-    with out_path.open("w", encoding="utf-8") as fp:
-        json.dump(results, fp, indent=2)
-
-    # Console echo for CI logs
-    logger.info("%s", json.dumps(results, indent=2))
-
-
-# -----------------------------------------------------------------------------
-# Main experiment orchestration
-# -----------------------------------------------------------------------------
-
-def _run_pipeline(mode: str) -> None:  # noqa: D401
-    """End-to-end execution for the given *mode*."""
-    config = _load_config(mode)
-
-    # -------------------- data --------------------
-    train_loader, val_loader = load_and_preprocess_data(config)
-
-    # ------------------- train --------------------
-    model, train_metrics = train_model(config=config, train_loader=train_loader, val_loader=val_loader)
-
-    # -------------- optional evaluation -----------
-    eval_metrics = evaluate_model(model=model, val_loader=val_loader, config=config)
-
-    # -------------- merge & persist ---------------
-    merged = {**train_metrics, **eval_metrics}
-    _save_results(merged, label=mode)
-
-
-def main() -> None:  # noqa: D401
-    parser = argparse.ArgumentParser(description="Synthetic experiment runner")
-    group = parser.add_mutually_exclusive_group(required=True)
-    group.add_argument("--smoke-test", action="store_true", help="Run quick smoke-test (1 epoch, 100 samples)")
-    group.add_argument("--full-experiment", action="store_true", help="Run full synthetic experiment")
-    args = parser.parse_args()
-
-    mode = "smoke_test" if args.smoke_test else "full_experiment"
-    logger.info("=== [%s] Experiment start ===", mode)
-    _run_pipeline(mode)
-    logger.info("=== [%s] Experiment end ===", mode)
-
-
-if __name__ == "__main__":
-    main()
+    # -------------------- Console verification -------------------------
+    print("\n" + "=" * 80)
+    print(description)
+    print("\nResults:")
+    print(json.dumps(result_json, indent=2))
+    print("Figures saved under .research/iteration6/images:")
+    for fig in result_json.get("figures", []):
+        print("  •", fig)
+    print("=" * 80 + "\n")

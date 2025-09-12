@@ -1,17 +1,22 @@
 [project]
-name = "refactored-experiment"
+name = "cosmos-diff-refactor"
 version = "0.1.0"
-description = "Refactored multi-file version of the original single-script experiment."
-authors = [
-  { name = "ML Researcher", email = "researcher@example.com" }
-]
+authors = [ { name = "Researcher AI" } ]
+description = "Refactored COSMOS-Diff experimental artefact"
+readme = "README.md"
 requires-python = ">=3.9"
 
 dependencies = [
-  "pyyaml>=6.0",
-  "torch>=1.9.0",
-  "numpy>=1.21.0",
+    "numpy>=1.21.0",
+    "torch>=1.9.0",
+    "torchvision>=0.10.0",
+    "diffusers>=0.18.0",
+    "tqdm>=4.64.0",
+    "requests>=2.30.0",
+    "sacrebleu>=2.3.0",
+    "pillow>=9.5.0",
+    "matplotlib>=3.7.0",
+    "torch-fidelity>=0.3.0",
+    "pynvml>=11.0.0",
+    "pyyaml>=6.0",
 ]
-
-[tool.setuptools.packages.find]
-where = ["src"]

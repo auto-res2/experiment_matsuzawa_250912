@@ -1,11 +1,34 @@
-# config/smoke_test.yaml
-train:
-  epochs: 1
-  batch_size: 16
-  learning_rate: 1e-3
+# Small-scale quick-validation config
+# Reduces sample counts & epochs to keep runtime <2-3 min on CI.
 
-data:
-  subset: 100  # 100 samples for CI
+datasets:
+  coco2017:
+    urls:
+      images: "http://images.cocodataset.org/zips/val2017.zip"
+      captions: "http://images.cocodataset.org/annotations/annotations_trainval2017.zip"
+    split_caption_sample: 5  # <<-- drastically reduced
+    img_resolution: 256
+  wmt22_en_zh:
+    url: "https://data.statmt.org/wmt22/translation-task/wmt22-corpus.tgz"
+    split_sentence_sample: 20
+    max_tokens: 64
+  habitat_lite:
+    git: "https://github.com/facebookresearch/habitat-sim"
+    episodes: 2
 
-model:
-  hidden_size: 32
+models:
+  sd_lite:
+    hf_repo: "stabilityai/stable-diffusion-2-1"
+    torch_dtype: "float16"
+  t5_base:
+    hf_repo: "google-t5/t5-base"
+    torch_dtype: "bfloat16"
+
+hyperparameters:
+  mpc_horizon: 4
+  mpc_rollouts: 4
+  carbon_weight: 0.1
+  thermal_weight: 0.05
+  uvec_delta: 1e-3
+
+hardware_devices: ["A100"]

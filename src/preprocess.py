@@ -1,55 +1,89 @@
-"""src/preprocess.py
-Generate a synthetic 2-D classification dataset (two Gaussian blobs) so that
-the training loop has something to chew on during CI.  The function returns
-PyTorch ``DataLoader`` objects for train & validation splits.  The dataset size
-is controlled via the YAML config (``data.subset``).  This lightweight setup
-avoids external dataset downloads and therefore keeps the test environment
-self-contained.
+"""
+preprocess.py – dataset acquisition / preparation utilities (verbatim from the
+original src/data.py).
 """
 from __future__ import annotations
 
-import logging
-from typing import Any, Dict, Tuple
+import hashlib
+import subprocess
+import tarfile
+import urllib.request
+import zipfile
+from pathlib import Path
+from typing import Dict, Any
 
-import numpy as np
-import torch
-from torch.utils.data import DataLoader, TensorDataset
+from tqdm import tqdm
 
-logger = logging.getLogger(__name__)
+__all__ = ["ensure_datasets_present"]
 
-
-def _make_blob(n: int) -> Tuple[np.ndarray, np.ndarray]:
-    """Create *n* samples from two separable 2-D Gaussians."""
-    n_per_class = n // 2
-    cov = [[0.1, 0.0], [0.0, 0.1]]
-    x0 = np.random.multivariate_normal(mean=[0.0, 0.0], cov=cov, size=n_per_class)
-    x1 = np.random.multivariate_normal(mean=[1.0, 1.0], cov=cov, size=n_per_class)
-    X = np.vstack([x0, x1]).astype(np.float32)
-    y = np.hstack([np.zeros(n_per_class), np.ones(n_per_class)]).astype(np.int64)
-    return X, y
+# ---------------------------------------------------------------------------
+#  Internal helpers – unchanged
+# ---------------------------------------------------------------------------
+class _ProgressBar(tqdm):
+    def update_to(self, b: int = 1, bsize: int = 1, tsize: int | None = None):
+        if tsize is not None:
+            self.total = tsize
+        self.update(b * bsize - self.n)
 
 
-def load_and_preprocess_data(  # noqa: D401
-    config: Dict[str, Any]
-) -> Tuple[DataLoader, DataLoader]:
-    """Create DataLoaders for a synthetic binary-classification task."""
+def _download(url: str, dest: Path, sha256: str | None = None):
+    dest.parent.mkdir(parents=True, exist_ok=True)
+    if dest.exists():
+        return
+    with _ProgressBar(unit="B", unit_scale=True, miniters=1, desc=url.split("/")[-1]) as t:
+        urllib.request.urlretrieve(url, filename=dest, reporthook=t.update_to)
+    if sha256 is not None:
+        h = hashlib.sha256(dest.read_bytes()).hexdigest()
+        if h != sha256:
+            dest.unlink(missing_ok=True)
+            raise RuntimeError(f"SHA-256 mismatch for {dest}")
 
-    subset = config.get("data", {}).get("subset")
-    subset = int(subset) if subset is not None else 1000  # default size
 
-    logger.info("Generating synthetic dataset with %d samples…", subset)
-    X, y = _make_blob(subset)
+def _extract(archive: Path, out_dir: Path):
+    if out_dir.exists():
+        return
+    print(f"[data] Extracting {archive.name} …")
+    if archive.suffix == ".zip":
+        with zipfile.ZipFile(archive) as z:
+            z.extractall(out_dir)
+    elif archive.suffix in {".tgz", ".gz"} or archive.suffixes[-2:] == [".tar", ".gz"]:
+        with tarfile.open(archive) as t:
+            t.extractall(out_dir)
+    else:
+        raise RuntimeError(f"Unknown archive format {archive}")
 
-    # Split 80/20
-    split = int(0.8 * subset)
-    X_train, y_train = X[:split], y[:split]
-    X_val, y_val = X[split:], y[split:]
+# ---------------------------------------------------------------------------
+#  Public API – ensure that all datasets referenced in CONFIG exist locally
+# ---------------------------------------------------------------------------
 
-    train_ds = TensorDataset(torch.from_numpy(X_train), torch.from_numpy(y_train))
-    val_ds = TensorDataset(torch.from_numpy(X_val), torch.from_numpy(y_val))
+def ensure_datasets_present(cfg: Dict[str, Any], data_root: Path):
+    # -------------------- MS-COCO 2017 -----------------------------------
+    coco = cfg["datasets"]["coco2017"]
+    coco_img_zip = data_root / "coco_val2017.zip"
+    coco_ann_zip = data_root / "coco_ann2017.zip"
+    _download(coco["urls"]["images"], coco_img_zip)
+    _download(coco["urls"]["captions"], coco_ann_zip)
+    _extract(coco_img_zip, data_root / "coco2017" / "images")
+    _extract(coco_ann_zip, data_root / "coco2017" / "annotations")
 
-    batch_size = int(config.get("train", {}).get("batch_size", 32))
-    train_loader = DataLoader(train_ds, batch_size=batch_size, shuffle=True)
-    val_loader = DataLoader(val_ds, batch_size=batch_size, shuffle=False)
+    # -------------------- WMT22 EN-ZH ------------------------------------
+    wmt = cfg["datasets"]["wmt22_en_zh"]
+    wmt_tar = data_root / "wmt22.tgz"
+    _download(wmt["url"], wmt_tar)
+    _extract(wmt_tar, data_root / "wmt22")
 
-    return train_loader, val_loader
+    # -------------------- Habitat-Lite -----------------------------------
+    hab_dir = data_root / "habitat_lite"
+    if not hab_dir.exists():
+        print("[data] Cloning Habitat-Sim (lite)…")
+        subprocess.run(
+            [
+                "git",
+                "clone",
+                "--depth",
+                "1",
+                cfg["datasets"]["habitat_lite"]["git"],
+                str(hab_dir),
+            ],
+            check=True,
+        )

@@ -1,11 +1,33 @@
-# config/full_experiment.yaml
-train:
-  epochs: 10   # still moderate to keep CI time reasonable
-  batch_size: 64
-  learning_rate: 1e-3
+# Full-scale configuration (identical to original DEFAULT_CONFIG)
 
-data:
-  subset: 2000  # larger synthetic dataset
+datasets:
+  coco2017:
+    urls:
+      images: "http://images.cocodataset.org/zips/val2017.zip"
+      captions: "http://images.cocodataset.org/annotations/annotations_trainval2017.zip"
+    split_caption_sample: 2000
+    img_resolution: 512
+  wmt22_en_zh:
+    url: "https://data.statmt.org/wmt22/translation-task/wmt22-corpus.tgz"
+    split_sentence_sample: 2000
+    max_tokens: 256
+  habitat_lite:
+    git: "https://github.com/facebookresearch/habitat-sim"
+    episodes: 40
 
-model:
-  hidden_size: 128
+models:
+  sd_lite:
+    hf_repo: "stabilityai/stable-diffusion-2-1"
+    torch_dtype: "float16"
+  t5_base:
+    hf_repo: "google-t5/t5-base"
+    torch_dtype: "bfloat16"
+
+hyperparameters:
+  mpc_horizon: 16
+  mpc_rollouts: 64
+  carbon_weight: 0.1
+  thermal_weight: 0.05
+  uvec_delta: 1e-3
+
+hardware_devices: ["A100", "RTX4090", "JetsonOrin"]
