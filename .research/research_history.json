@@ -6,5 +6,82 @@
     "memory-aware continual learning",
     "compressed rehearsal methods",
     "parameter pruning continual learning"
+  ],
+  "research_study_list": [
+    {
+      "title": "Continual Learning in Low-rank Orthogonal Subspaces"
+    },
+    {
+      "title": "Contextual Transformation Networks for Online Continual Learning"
+    },
+    {
+      "title": "Improving Task-free Continual Learning by Distributionally Robust Memory Evolution"
+    },
+    {
+      "title": "Improving Task-free Continual Learning by Distributionally Robust Memory Evolution"
+    },
+    {
+      "title": "SparCL: Sparse Continual Learning on the Edge"
+    },
+    {
+      "title": "Analysis of Stochastic Processes through Replay Buffers"
+    },
+    {
+      "title": "Analysis of Stochastic Processes through Replay Buffers"
+    },
+    {
+      "title": "Large Batch Experience Replay"
+    },
+    {
+      "title": "Large Batch Experience Replay"
+    },
+    {
+      "title": "Improving Computational Efficiency in Visual Reinforcement Learning via Stored Embeddings"
+    },
+    {
+      "title": "Mitigating Catastrophic Forgetting in Online Continual Learning by Modeling Previous Task Interrelations via Pareto Optimization"
+    },
+    {
+      "title": "Look-ahead Meta Learning for Continual Learning"
+    },
+    {
+      "title": "Look-ahead Meta Learning for Continual Learning"
+    },
+    {
+      "title": "Graph-Based Continual Learning"
+    },
+    {
+      "title": "Contextual Transformation Networks for Online Continual Learning"
+    },
+    {
+      "title": "Remember the Past: Distilling Datasets into Addressable Memories for Neural Networks"
+    },
+    {
+      "title": "Policy Rehearsing: Training Generalizable Policies for Reinforcement Learning"
+    },
+    {
+      "title": "VeLoRA: Memory Efficient Training using Rank-1 Sub-Token Projections"
+    },
+    {
+      "title": "BatchEnsemble: an Alternative Approach to Efficient Ensemble and Lifelong Learning"
+    },
+    {
+      "title": "Cramming: Training a Language Model on a single GPU in one day."
+    },
+    {
+      "title": "Uncertainty-guided Continual Learning with Bayesian Neural Networks"
+    },
+    {
+      "title": "SparCL: Sparse Continual Learning on the Edge"
+    },
+    {
+      "title": "Bayesian Structural Adaptation for Continual Learning"
+    },
+    {
+      "title": "Long Live the Lottery: The Existence of Winning Tickets in Lifelong Learning"
+    },
+    {
+      "title": "Scalable and Order-robust Continual Learning with Additive Parameter Decomposition"
+    }
   ]
 }
