@@ -1,12 +1,4 @@
-# config/smoke_test.yaml
-# -----------------------------------------------------------------------------
-# A minimal configuration used for quick end-to-end validation.  We keep the
-# structure identical to the full config while using dummy (yet syntactically
-# valid) URLs that point to a small public file.  The STRICT NO-FALLBACK RULE
-# still applies – the URL *must* exist.  For demonstration we reference a tiny
-# raw GitHub file that is guaranteed to be reachable.
-# -----------------------------------------------------------------------------
-
+# config/smoke_test.yaml – unchanged logical structure, kept for completeness
 version: 1.0
 
 hardware:
@@ -19,7 +11,7 @@ models:
     hf_hub_id: "google/mobilenet_v2_0.75_160"
     quantisation: "int8"
 
-after_smoke_only: true  # marker key to show difference from full config
+after_smoke_only: true
 
 hyperparameters:
   semm:

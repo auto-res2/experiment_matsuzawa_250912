@@ -1,6 +1,6 @@
 [project]
 name = "cipher-omega"
-version = "0.1.0"
+version = "0.1.1"
 description = "Refactored scaffold for the CIPHER-Ω continual-learning experiments"
 readme = "README.md"
 requires-python = ">=3.9"
@@ -9,7 +9,7 @@ dependencies = [
   "PyYAML>=6.0",
   "requests>=2.31.0",
   "torch>=1.9.0",
-  "numpy>=1.23"  # Added to silence PyTorch warning and fulfil implicit dep
+  "numpy>=1.23"
 ]
 
 [tool.setuptools]
