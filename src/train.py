@@ -11,7 +11,6 @@ import os
 from types import ModuleType
 from typing import Any, Tuple
 
-import importlib
 import torch
 from torch import nn
 
@@ -42,6 +41,8 @@ class SuperSurrogate(nn.Module):
 
         auth_kwargs: dict[str, Any] = {"use_auth_token": hf_token} if hf_token else {}
         try:
+            # We deliberately keep the initial load in float32 because some CPU
+            # back-ends (especially the CI runners) cannot execute fp16 kernels.
             self.model = AutoModelForSeq2SeqLM.from_pretrained(base_model_name, **auth_kwargs)
             self.tokenizer = AutoTokenizer.from_pretrained(base_model_name, **auth_kwargs)
         except Exception as exc:  # pragma: no cover – network / HF issues
@@ -53,8 +54,11 @@ class SuperSurrogate(nn.Module):
         self._current_bit: int = 16
         self._current_width: float = 1.0
 
-        # start in half precision (fp16) for a decent speed / memory baseline
-        self.model.half()
+        # If a CUDA device is available we down-cast to fp16 to speed-up smoke
+        # tests.  On CPU we must stay in fp32 because PyTorch lacks many fp16
+        # kernels for the host back-end.
+        if torch.cuda.is_available():
+            self.model.half()
 
     # ------------------------------------------------------------------
     # public knobs
@@ -67,7 +71,7 @@ class SuperSurrogate(nn.Module):
             return  # already at requested bit-depth
 
         if bits == 16:
-            # restore original full-precision tensors
+            # restore original full-precision tensors (fp32)
             self.model.float()
         else:
             if not _BNB_AVAILABLE:
