@@ -1,44 +1,72 @@
-"""src/evaluate.py – numerical summary & simple bar plot."""
+# src/evaluate.py
+"""Evaluation utilities and plotting helpers."""
 from __future__ import annotations
 
 import json
 import pathlib
-from typing import Any
+from typing import List
 
-import matplotlib
+import matplotlib.pyplot as plt
+import seaborn as sns
+import torch
 
-# Use a non-interactive backend suitable for headless servers
-matplotlib.use("Agg")
-import matplotlib.pyplot as plt  # noqa: E402
+sns.set_theme(style="whitegrid")
+
+_RESULTS = pathlib.Path(".research/iteration3")
+_RESULTS.mkdir(parents=True, exist_ok=True)
+
+__all__ = [
+    "evaluate_task",
+    "line_plot",
+]
 
 
-def summarise_and_plot(json_path: pathlib.Path, image_dir: pathlib.Path) -> str:
-    """Reads a JSON result file and produces a bar-plot (Average Accuracy)."""
+def evaluate_task(
+    model: torch.nn.Module,
+    dataset: torch.utils.data.Dataset,
+    device: torch.device,
+    task_id: int,
+) -> float:
+    """Compute classification accuracy for a single task."""
+    model.eval()
+    correct = 0
+    total = 0
+    loader = torch.utils.data.DataLoader(dataset, batch_size=256)
+    with torch.no_grad():
+        for x, y in loader:
+            x = x.to(device)
+            preds = model(x, task_id).argmax(1).cpu()
+            correct += (preds == y).sum().item()
+            total += y.numel()
+    model.train()
+    return 100.0 * correct / total if total else 0.0
 
-    data: Any = json.loads(json_path.read_text())
-    aa = [r["AA"] for r in data["runs"]]
-    labels = [f"{r['dataset']}-s{r['seed']}" for r in data["runs"]]
 
-    plt.figure(figsize=(8, 3))
-    plt.bar(labels, aa, color="steelblue")
-    for i, v in enumerate(aa):
-        plt.text(i, v + 0.01, f"{v * 100:.1f}%", ha="center", va="bottom", fontsize=8)
-    plt.ylabel("Average Accuracy")
-    plt.xticks(rotation=45, ha="right")
-    plt.tight_layout()
+# -----------------------------------------------------------------------------
+#   Plotting helpers
+# -----------------------------------------------------------------------------
 
-    image_dir.mkdir(parents=True, exist_ok=True)
-    fig_name = image_dir / "accuracy_tiger_lite.pdf"
-    plt.savefig(fig_name, bbox_inches="tight")
+def line_plot(
+    json_path: pathlib.Path,
+    key: str,
+    title: str,
+    pdf_name: str,
+) -> str:
+    """Generate a simple line plot from the metrics JSON and save as PDF."""
+    data = json.loads(json_path.read_text())
+    y: List[float] = data[key]
+    x = list(range(len(y)))
+
+    plt.figure(figsize=(6, 4))
+    plt.plot(x, y, marker="o", label=key)
+    for xi, yi in zip(x, y):
+        plt.text(xi, yi, f"{yi:.2f}")
+    plt.xlabel("Task")
+    plt.ylabel(key)
+    plt.title(title)
+    plt.legend()
+
+    out_path = _RESULTS / pdf_name
+    plt.savefig(out_path, bbox_inches="tight", format="pdf")
     plt.close()
-    return str(fig_name)
-
-
-# ---------------------------------------------------------------------------
-# Hardware-in-the-loop demo stub
-# ---------------------------------------------------------------------------
-
-def run_mcu_demo(*_args, **_kwargs):  # noqa: D401, ANN001
-    raise RuntimeError(
-        "Hardware-in-the-loop demo requires a physical STM32H7 board – aborting."
-    )
+    return str(out_path)

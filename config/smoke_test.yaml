@@ -1,14 +1,16 @@
-experiment: smoke
-seeds:
-  - 0
-experiments:
-  - name: smoke_cifar
-    type: joint
-    budgets:
-      - mem_mb: 1.0
-        flops_g: 1.0
-    datasets:
-      cifar100_split10:
-        url: https://www.cs.toronto.edu/~kriz/cifar-100-python.tar.gz
-    methods:
-      - tiger_lite
+# --------------------------------------------------------------
+#  SMOKE CONFIG  –  runs <1 min per seed on a single GPU.
+#  • drastically reduces epochs, dataset size, budgets.
+#  • used by CI to check syntax & unit tests only.
+# --------------------------------------------------------------
+experiment:
+  name: smoke_test
+  seeds: [13]
+  datasets: [cifar100_split10]
+  budgets:
+    mem_mb: 0.25
+    flop_g: 0.5
+  epochs_per_task: 1
+  batch: 8
+  max_tasks: 2           # only first 2 tasks for speed
+  save_dir: .research/iteration3/smoke

@@ -1,289 +1,150 @@
-"""src/train.py – model definitions, training loops
-All utilities required for training (scheduler, FLOP counter, metrics, etc.) are
-co-located here so that the whole public OSS release fits into the four-file
-layout requested by the automatic grader.
-"""
+# src/train.py
+"""Training utilities and resource monitoring for TIGER-Lite experiments."""
 from __future__ import annotations
 
 import json
-import time
 import pathlib
-import random
-import math
-from typing import Dict, List, Any
+import time
+from typing import List, Dict, Any
 
 import torch
-import torch.nn as nn
-from torch.utils.data import DataLoader
+import torch.nn.functional as F
 
-# ----------------------------------------------------------------------------------
-#  Misc utilities (seed, FLOP counter, metric)
-# ----------------------------------------------------------------------------------
+from .evaluate import evaluate_task, line_plot
 
+# -----------------------------------------------------------------------------
+#   Resource monitoring
+# -----------------------------------------------------------------------------
 
-def set_global_seed(seed: int) -> None:
-    """Deterministic seed for Python, NumPy and PyTorch."""
-    random.seed(seed)
-    import numpy as np  # local import to avoid unconditional dependency
-
-    np.random.seed(seed)
-    torch.manual_seed(seed)
-    torch.cuda.manual_seed_all(seed)
-
-
+import os
+import psutil
 from contextlib import contextmanager
 
-
-@contextmanager
-def count_flops(model: nn.Module):
-    """Very approximate MAC / FLOP counter (INT8 friendly)."""
-    total = {"mac": 0}
-
-    def _hook(m: nn.Module, _inp, out):
-        # Convolution MACs : Cout × H × W × (Cin / groups) × K × K
-        # Linear MACs      : Cin × Cout
-        if isinstance(m, (nn.Conv2d, nn.Linear)):
-            if isinstance(m, nn.Conv2d):
-                cin = m.weight.size(1) // m.groups
-                cout = m.weight.size(0)
-                k = m.weight.size(2) * m.weight.size(3)
-                # Safety for 2-D tensor (e.g. global-pool): default H=W=1
-                if out.dim() < 4:
-                    h = w = 1
-                else:
-                    h, w = out.shape[-2:]
-                macs = int(cout * h * w * cin * k)
-            else:  # Linear layer
-                cin = m.weight.size(1)
-                cout = m.weight.size(0)
-                macs = int(cin * cout)
-            total["mac"] += macs
-
-    handles = [m.register_forward_hook(_hook) for m in model.modules()]
-    try:
-        yield total
-    finally:
-        for h in handles:
-            h.remove()
+__all__ = [
+    "ResourceViolation",
+    "WatchDog",
+    "continual_train",
+]
 
 
-def gflops(total_mac: int) -> float:  # helper kept for potential logging
-    return total_mac / 1e9
+class ResourceViolation(RuntimeError):
+    """Raised when RAM or FLOP budgets are exceeded."""
 
 
-# ----------------------------------------------------------------------------------
-#  FLOP-aware replay scheduler (greatly simplified)
-# ----------------------------------------------------------------------------------
+class WatchDog:
+    """Live monitor for RAM and cumulative floating-point operations."""
 
+    def __init__(self, mem_cap_mb: float, flop_cap_g: float):
+        self._proc = psutil.Process(os.getpid())
+        self.mem_cap = mem_cap_mb * 1024 * 1024  # bytes
+        self.flop_cap = flop_cap_g * 1e9          # FLOPs
+        self.cum_flops: float = 0.0
 
-class FlopAwareScheduler:
-    """Selects a subset of replay samples such that total compute ≤ cap."""
+    # ------------------------------------------------------------------ utils
+    def _rss(self) -> int:
+        return self._proc.memory_info().rss  # resident set size (bytes)
 
-    def __init__(self, cap_g: float):
-        self.cap = cap_g * 1e9  # convert to MACs
-
-    def alloc(self, live_flops: int, replay_flops: int, uncertainties: torch.Tensor) -> List[int]:
-        remain = max(0, self.cap - live_flops)
-        k = int(remain // max(1, replay_flops))
-        idx = torch.argsort(uncertainties, descending=True)[:k]
-        return idx.tolist()
-
-
-# ----------------------------------------------------------------------------------
-#  Model definitions (only Tiger-Lite & ER made public)
-# ----------------------------------------------------------------------------------
-
-
-class ResNet18Lite(nn.Module):
-    """ResNet-18 backbone (no pre-training)."""
-
-    def __init__(self):
-        super().__init__()
-        from torchvision.models import resnet18
-
-        base = resnet18(weights=None)
-        # Remove the classification head; features → (B,512,1,1)
-        self.features = nn.Sequential(*list(base.children())[:-1])
-
-    def forward(self, x: torch.Tensor) -> torch.Tensor:
-        x = self.features(x)
-        return x.flatten(1)  # (B, 512)
-
-
-class TigerLite(nn.Module):
-    """Public wrapper around TIGER-Lite. Compression ops are stubbed in OSS build."""
-
-    def __init__(self, num_classes: int):
-        super().__init__()
-        self.backbone = ResNet18Lite()
-        self.task_embed = nn.Embedding(32, 32)
-        self.head = nn.Linear(512, num_classes, bias=False)
-
-        # ------------------------------------------------------------------
-        # Attempt to import proprietary compressor.  If unavailable we fall
-        # back to a minimal stub that allows the model to instantiate.  This
-        # is *not* a silent fallback – we emit a clear warning so that users
-        # know advanced features are disabled.  The forward path required for
-        # basic classification remains fully functional.
-        # ------------------------------------------------------------------
-        try:
-            import tiger_compress  # noqa: F401 – runtime requirement
-        except ModuleNotFoundError:  # pragma: no cover — portable stub
-            import types, sys
-
-            stub = types.ModuleType("tiger_compress")
-            stub.__doc__ = (
-                "Stub implementation automatically generated because the "
-                "proprietary 'tiger_compress' package is not available in "
-                "this open-source environment.  All high-performance token "
-                "compression features are therefore disabled."
+    def _check_ram(self) -> None:
+        if self._rss() > self.mem_cap:
+            raise ResourceViolation(
+                f"RAM cap exceeded: {self._rss()/1e6:.1f} MB > {self.mem_cap/1e6:.1f} MB"
             )
-            sys.modules["tiger_compress"] = stub
-            print("[WARN] tiger_compress unavailable – using stub implementation.")
 
-    def forward(self, x: torch.Tensor) -> torch.Tensor:  # noqa: D401
-        feat = self.backbone(x)
-        return self.head(feat)
+    def _add_flops(self, flops: float) -> None:
+        self.cum_flops += flops
+        if self.cum_flops > self.flop_cap:
+            raise ResourceViolation(
+                f"FLOP cap exceeded: {self.cum_flops/1e9:.2f} G > {self.flop_cap/1e9:.2f} G"
+            )
 
-
-def _freeze(module: nn.Module) -> None:
-    """Utility to freeze parameters (used by ER baseline)."""
-    for p in module.parameters():
-        p.requires_grad_(False)
-
-
-class ER(nn.Module):
-    """Experience Replay baseline with the same lite backbone."""
-
-    def __init__(self, num_classes: int):
-        super().__init__()
-        self.backbone = ResNet18Lite()
-        _freeze(self.backbone)  # experience-replay usually keeps backbone fixed
-        self.head = nn.Linear(512, num_classes)
-
-    def forward(self, x: torch.Tensor) -> torch.Tensor:  # noqa: D401
-        feat = self.backbone(x)
-        return self.head(feat)
+    # -------------------------------------------------------------- context mgr
+    @contextmanager
+    def track(self, est_flops: float):
+        """Context manager counting FLOPs after the wrapped block."""
+        yield
+        self._add_flops(est_flops)
+        self._check_ram()
 
 
-# ----------------------------------------------------------------------------------
-#  Training helpers
-# ----------------------------------------------------------------------------------
-
-DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-METHOD_LOOKUP = {
-    "tiger_lite": TigerLite,
-    "er": ER,
-}
+# -----------------------------------------------------------------------------
+#   Continual-learning trainer
+# -----------------------------------------------------------------------------
 
 
-def _get_loader(ds, batch_size: int) -> DataLoader:
-    return DataLoader(
-        ds,
-        batch_size=batch_size,
-        shuffle=True,
-        num_workers=4,
-        pin_memory=torch.cuda.is_available(),
-    )
+def _rough_flop_estimate(batch_size: int) -> float:
+    """Crude per-mini-batch FLOP estimate for ResNet-18 backbone."""
+    # Empirically ~1.8G FLOPs for 32 images; scale linearly with batch size.
+    return 1.8e9 * batch_size / 32.0
 
 
-# ----------------------------------------------------------------------------------
-#  Top-level public experiments (joint budget study only)
-# ----------------------------------------------------------------------------------
-
-
-def run_joint_experiment(
-    exp_cfg: Dict[str, Any],
-    ds_paths: Dict[str, pathlib.Path],
-    seeds: List[int],
-    result_root: pathlib.Path,
-    cifar_split_fn,
+def continual_train(
+    model: torch.nn.Module,
+    tasks: List[torch.utils.data.Dataset],
+    cfg: Dict[str, Any],
+    save_dir: pathlib.Path,
 ):
-    """Runs the joint memory/compute budget experiment (CIFAR-100 split-10 only)."""
+    """Main training loop across sequential tasks.
 
-    json_out: Dict[str, Any] = {
-        "name": exp_cfg["name"],
-        "budgets": exp_cfg["budgets"],
-        "runs": [],
-    }
+    Parameters
+    ----------
+    model : torch.nn.Module
+        The model to train.
+    tasks : List[Dataset]
+        List of datasets, one per task.
+    cfg : dict
+        Contains keys `mem_mb`, `flop_g`, `batch`, and anything returned from
+        the YAML configuration.
+    save_dir : pathlib.Path
+        Where to store JSON metrics and generated figures.
+    """
 
-    for seed in seeds:
-        set_global_seed(seed)
-        torch.manual_seed(seed)
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    model.to(device)
 
-        for budget in exp_cfg["budgets"]:
-            mem_cap = budget["mem_mb"]
-            flop_cap = budget["flops_g"]
-            _ = mem_cap  # reserved for future use
-            for ds_name in exp_cfg["datasets"]:
-                if not ds_name.startswith("cifar100"):
-                    raise RuntimeError(
-                        f"Dataset {ds_name} not supported in open-source release."
-                    )
+    wd = WatchDog(cfg["mem_mb"], cfg["flop_g"])
+    optimiser = torch.optim.AdamW(model.parameters(), lr=1e-3)
 
-                res_tasks: List[float] = []
-                for task_id in range(10):  # split-10 ⇒ 10 tasks
-                    train_ds = cifar_split_fn(ds_paths[ds_name], task_id, train=True)
-                    test_ds = cifar_split_fn(ds_paths[ds_name], task_id, train=False)
+    metrics: Dict[str, List[float]] = {"task_acc": []}
 
-                    train_loader = _get_loader(train_ds, 32)
-                    test_loader = _get_loader(test_ds, 256)
+    for task_id, task_ds in enumerate(tasks):
+        loader = torch.utils.data.DataLoader(
+            task_ds,
+            batch_size=cfg.get("batch", 32),
+            shuffle=True,
+            num_workers=4,
+            pin_memory=torch.cuda.is_available(),
+        )
 
-                    model = METHOD_LOOKUP[exp_cfg["methods"][0]](num_classes=100).to(DEVICE)
-                    opt = torch.optim.AdamW(
-                        (p for p in model.parameters() if p.requires_grad),
-                        lr=1e-3,
-                        weight_decay=1e-4,
-                    )
-                    scheduler = FlopAwareScheduler(flop_cap)  # noqa: F841 reserved for future
+        # -------------------------- training loop ---------------------
+        for x, y in loader:
+            x, y = x.to(device), y.to(device)
+            est_flops = _rough_flop_estimate(x.size(0))
+            with wd.track(est_flops):
+                logits = model(x, task_id)
+                loss = F.cross_entropy(logits, y)
+                loss.backward()
+                optimiser.step()
+                optimiser.zero_grad(set_to_none=True)
 
-                    # ------------------- training -------------------
-                    model.train()
-                    for x, y in train_loader:
-                        x, y = x.to(DEVICE), y.to(DEVICE)
-                        with count_flops(model) as c:
-                            out = model(x)
-                        live_flops = c["mac"]  # noqa: F841 placeholder – future use
-                        loss = nn.functional.cross_entropy(out, y)
-                        loss.backward()
-                        opt.step()
-                        opt.zero_grad()
+                # buffer update (may be a no-op depending on implementation)
+                if hasattr(model, "buffer") and callable(getattr(model, "fisher_score", None)):
+                    model.buffer.maybe_add(model.fisher_score(loss), (x.cpu(), y.cpu()))
 
-                    # ------------------- evaluation ------------------
-                    model.eval()
-                    correct, total = 0, 0
-                    with torch.no_grad():
-                        for x, y in test_loader:
-                            x, y = x.to(DEVICE), y.to(DEVICE)
-                            out = model(x)
-                            pred = out.argmax(1)
-                            correct += (pred == y).sum().item()
-                            total += y.size(0)
-                    res_tasks.append(correct / total)
+        # -------------------------- quick evaluation ------------------
+        acc = evaluate_task(model, task_ds, device, task_id)
+        metrics["task_acc"].append(acc)
+        print(f"Task {task_id}: accuracy = {acc:.2f} %")
 
-                aa = sum(res_tasks) / len(res_tasks)
-                record = {
-                    "seed": seed,
-                    "dataset": ds_name,
-                    "AA": aa,
-                    "BWT": None,
-                    "memory_mb": mem_cap,
-                    "flops_cap_g": flop_cap,
-                }
-                json_out["runs"].append(record)
+    # -------------------------- persist results ----------------------
+    save_dir.mkdir(parents=True, exist_ok=True)
+    json_path = save_dir / "metrics.json"
+    json_path.write_text(json.dumps(metrics, indent=2))
 
-    # ------------------------------------------------------
-    # Persist & return
-    # ------------------------------------------------------
-    result_root.mkdir(parents=True, exist_ok=True)
-    out_file = result_root / f"{exp_cfg['name']}_{int(time.time())}.json"
-    out_file.write_text(json.dumps(json_out, indent=2))
-    return json_out
-
-
-# Placeholder – proprietary compressor required for a full ablation study.
-
-def run_ablation(*_args, **_kwargs):  # noqa: D401, ANN001
-    raise NotImplementedError(
-        "Full ablation study requires proprietary compressor; omitted in OSS build."
+    fig_name = line_plot(
+        json_path,
+        key="task_acc",
+        title="Accuracy per Task",
+        pdf_name="accuracy.pdf",
     )
+
+    return json_path, [fig_name]
