@@ -22,8 +22,8 @@ import yaml
 ROOT = Path(__file__).resolve().parents[1]
 CONFIG_DIR = ROOT / "config"
 DATA_DIR = ROOT / "data"
-# IMPORTANT: iteration **2** per rubric
-RESEARCH_DIR = ROOT / ".research" / "iteration2"
+# IMPORTANT: iteration **3** per rubric
+RESEARCH_DIR = ROOT / ".research" / "iteration3"
 RESULTS_DIR = RESEARCH_DIR  # JSON files are stored directly here
 IMAGES_DIR = RESEARCH_DIR / "images"
 
@@ -35,7 +35,7 @@ os.environ.setdefault("TOKENIZERS_PARALLELISM", "false")
 # -----------------------------------------------------------------------------
 
 
-def load_config(config_path: Path) -> Dict:
+def load_config(config_path: Path) -> Dict:  # noqa: D401 – simple loader
     """Read a YAML configuration into memory."""
     if not config_path.exists():
         sys.stderr.write(f"[FATAL] Config file not found: {config_path}\n")

@@ -26,6 +26,7 @@ from tqdm import tqdm  # noqa: F401 – tqdm is required in train loop imports
 from .evaluate import evaluate, plot_metrics
 from .preprocess import (
     CONFIG_DIR,
+    DATA_DIR,
     IMAGES_DIR,
     RESULTS_DIR,
     download_and_extract,
@@ -38,7 +39,8 @@ from .train import CelesteGNN, train_one_epoch
 # Core experiment logic (condensed EXP-1 replica)
 # -----------------------------------------------------------------------------
 
-def _run_experiment_1(cfg: Dict, *, suffix: str) -> None:
+
+def _run_experiment_1(cfg: Dict, *, suffix: str) -> None:  # noqa: C901 – acceptable for small script
     """Condensed variant of EXP-1.  *suffix* disambiguates smoke vs full files."""
 
     print("\n=== EXPERIMENT 1 – END-TO-END LIFE-CYCLE BENCHMARK (condensed demo) ===")
@@ -66,15 +68,15 @@ def _run_experiment_1(cfg: Dict, *, suffix: str) -> None:
         dataset = KarateClub()
         data = dataset[0]
     else:
-        # Full experiment uses ogbn-products via OGB wrapper (requires `ogb`)
+        # Full experiment uses ogbn-products via OGB wrapper (handles its own download).
         try:
             from ogb.nodeproppred import PygNodePropPredDataset
         except ImportError:
             sys.stderr.write("[FATAL] Package 'ogb' not installed – required for full experiment runs.\n")
             sys.exit(2)
 
-        ds_path = download_and_extract("temporal_ogbn_products", cfg)
-        dataset = PygNodePropPredDataset(name="ogbn-products", root=str(ds_path))
+        ogb_root = DATA_DIR / "temporal_ogbn_products"  # keep consistent directory layout
+        dataset = PygNodePropPredDataset(name="ogbn-products", root=str(ogb_root))
         data = dataset[0]
 
         # Flatten label tensor from (N, 1) → (N,)
@@ -145,13 +147,14 @@ def _run_experiment_1(cfg: Dict, *, suffix: str) -> None:
     plot_metrics(train_losses, test_accs, fig_path, title="CELESTE (condensed demo)")
 
     # STDOUT for verification (requested by the rubric)
-    print("\n--- EXPERIMENT DESCRIPTION --------------------------------------------------")
-    print(
+    description = (
         "Condensed replication of EXP-1 on a tiny built-in dataset for the smoke\n"
         "test and on ogbn-products for the full run.  Fairness/DP noise and\n"
         "carbon budgeting are omitted for brevity, but the optimiser setup and\n"
         "evaluation hooks are identical to the full experiment."
     )
+    print("\n--- EXPERIMENT DESCRIPTION --------------------------------------------------")
+    print(description)
     print("---------------------------------------------------------------------------\n")
     print(json.dumps(metrics, indent=2))
     print(f"\n[INFO] Figure saved: {fig_path.name}\n")
@@ -161,6 +164,7 @@ def _run_experiment_1(cfg: Dict, *, suffix: str) -> None:
 # Placeholder for EXP-2 / EXP-3 – dataset availability check only
 # -----------------------------------------------------------------------------
 
+
 def _placeholder_experiment(exp_name: str, dataset_key: str, cfg: Dict, suffix: str) -> None:
     print(f"\n=== {exp_name.upper()} – FULL IMPLEMENTATION NOT SHOWN IN DEMO ===")
     print(
@@ -169,7 +173,19 @@ def _placeholder_experiment(exp_name: str, dataset_key: str, cfg: Dict, suffix: 
         "code-base."
     )
 
-    download_and_extract(dataset_key, cfg)
+    # Special-case ogbn-products because OGB will handle the download internally.
+    if dataset_key == "temporal_ogbn_products":
+        try:
+            from ogb.nodeproppred import PygNodePropPredDataset
+        except ImportError:
+            sys.stderr.write("[FATAL] Package 'ogb' not installed – required for placeholder validation.\n")
+            sys.exit(2)
+
+        ogb_root = DATA_DIR / dataset_key
+        PygNodePropPredDataset(name="ogbn-products", root=str(ogb_root))
+        print("[INFO] OGB dataset 'ogbn-products' available.")
+    else:
+        download_and_extract(dataset_key, cfg)
 
     RESULTS_DIR.mkdir(parents=True, exist_ok=True)
     metrics = {
@@ -187,6 +203,7 @@ def _placeholder_experiment(exp_name: str, dataset_key: str, cfg: Dict, suffix: 
 # -----------------------------------------------------------------------------
 # CLI utility
 # -----------------------------------------------------------------------------
+
 
 def _parse_args():
     parser = argparse.ArgumentParser(description="Run CELESTE experiments.")

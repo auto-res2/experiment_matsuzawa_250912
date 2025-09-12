@@ -40,7 +40,7 @@ class CelesteAdapter(nn.Module):
         self.proj = nn.Linear(in_dim, out_dim)
         self.act = nn.ReLU()
 
-    def forward(self, x):
+    def forward(self, x):  # noqa: D401 – simple passthrough
         return self.act(self.proj(x))
 
 
@@ -65,7 +65,7 @@ class CelesteGNN(nn.Module):
         self.convs = nn.ModuleList([SAGEConv(hidden, hidden) for _ in range(num_layers)])
         self.final = nn.Linear(hidden, num_classes)
 
-    def forward(self, x, edge_index):
+    def forward(self, x, edge_index):  # noqa: D401 – standard forward
         h = self.adapter(x)
         for conv in self.convs:
             h = conv(h, edge_index).relu()
@@ -75,6 +75,7 @@ class CelesteGNN(nn.Module):
 # -----------------------------------------------------------------------------
 # Training loop (single epoch)
 # -----------------------------------------------------------------------------
+
 
 def train_one_epoch(
     model: nn.Module,
