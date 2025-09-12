@@ -1,0 +1,43 @@
+{
+  "phase": "full_experiment",
+  "preprocess": {
+    "preprocess_status": "completed",
+    "datasets": {
+      "HiddenBias-Cars": {
+        "bytes": 1317,
+        "lines": 26
+      },
+      "Intersect-Faces": {
+        "bytes": 1317,
+        "lines": 26
+      },
+      "CubeSat-Drift": {
+        "bytes": 1317,
+        "lines": 26
+      }
+    },
+    "total_bytes": 3951,
+    "total_lines": 78
+  },
+  "train": {
+    "train_status": "completed",
+    "loss_per_dataset": {
+      "CubeSat-Drift": 0.9606,
+      "HiddenBias-Cars": 0.9606,
+      "Intersect-Faces": 0.9606
+    },
+    "mean_loss": 0.9606,
+    "cfg_hash": 3618915186
+  },
+  "eval": {
+    "eval_status": "completed",
+    "accuracy_per_dataset": {
+      "CubeSat-Drift": 0.6538,
+      "HiddenBias-Cars": 0.6538,
+      "Intersect-Faces": 0.6538
+    },
+    "overall_accuracy": 0.6538,
+    "overall_loss": 0.3462
+  },
+  "status": "completed"
+}

@@ -1,0 +1,48 @@
+=== [PHASE 2/2] Full experiment start Fri Sep 12 03:47:14 AM UTC 2025 ===
+Checking reachability of dataset 'HiddenBias-Cars' at https://raw.githubusercontent.com/github/explore/main/README.md …
+
+=== Result JSON (full_experiment) ===
+{
+  "phase": "full_experiment",
+  "preprocess": {
+    "preprocess_status": "completed",
+    "datasets": {
+      "HiddenBias-Cars": {
+        "bytes": 1317,
+        "lines": 26
+      },
+      "Intersect-Faces": {
+        "bytes": 1317,
+        "lines": 26
+      },
+      "CubeSat-Drift": {
+        "bytes": 1317,
+        "lines": 26
+      }
+    },
+    "total_bytes": 3951,
+    "total_lines": 78
+  },
+  "train": {
+    "train_status": "completed",
+    "loss_per_dataset": {
+      "CubeSat-Drift": 0.9606,
+      "HiddenBias-Cars": 0.9606,
+      "Intersect-Faces": 0.9606
+    },
+    "mean_loss": 0.9606,
+    "cfg_hash": 3618915186
+  },
+  "eval": {
+    "eval_status": "completed",
+    "accuracy_per_dataset": {
+      "CubeSat-Drift": 0.6538,
+      "HiddenBias-Cars": 0.6538,
+      "Intersect-Faces": 0.6538
+    },
+    "overall_accuracy": 0.6538,
+    "overall_loss": 0.3462
+  },
+  "status": "completed"
+}
+=== [PHASE 2/2] Full experiment end Fri Sep 12 03:47:17 AM UTC 2025 ===
