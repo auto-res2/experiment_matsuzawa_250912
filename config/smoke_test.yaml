@@ -1,0 +1,9 @@
+general:
+  seed: 13
+  epochs_pretrain: 1
+  epochs_finetune: 1
+  use_mixed_precision: false
+datasets:
+  - reddit_threads
+experiments:
+  - 1

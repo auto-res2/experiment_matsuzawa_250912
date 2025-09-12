@@ -1,0 +1,14 @@
+general:
+  seed: 13
+  epochs_pretrain: 20
+  epochs_finetune: 5
+  use_mixed_precision: true
+datasets:
+  - reddit_threads
+  - elliptic_btc
+  - taobao_actions
+  - ring_transfer_stream
+experiments:
+  - 1
+  - 2
+  - 3
