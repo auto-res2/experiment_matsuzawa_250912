@@ -1,0 +1,5 @@
+/home/toma/t-80-8-b-03/_work/experiment_matsuzawa_250912/experiment_matsuzawa_250912/.venv/lib/python3.11/site-packages/torch/_subclasses/functional_tensor.py:279: UserWarning: Failed to initialize NumPy: No module named 'numpy' (Triggered internally at /pytorch/torch/csrc/utils/tensor_numpy.cpp:81.)
+  cpu = _conversion_method_template(device=torch.device("cpu"))
+
+*** FATAL: Dataset URLs are missing for: HiddenBias-Cars, Intersect-Faces, CubeSat-Drift
+
