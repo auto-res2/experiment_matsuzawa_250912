@@ -104,7 +104,8 @@ class AoWHook(torch.autograd.Function):
         sign = (tensor >= 0).type(torch.bool)
         exponent_bit = (tensor.abs() > tensor.abs().median()).type(torch.bool)
         ctx.save_for_backward(sign, exponent_bit)
-        return tensor  # identity – compute on host
+        # Identity forward (tensor also returned to downstream ops)
+        return tensor
 
     @staticmethod
     def backward(ctx, grad_output: torch.Tensor):
@@ -132,23 +133,23 @@ def aow_wrap(module: nn.Module):
 # Model definitions ---------------------------------------------------------------------
 # -------------------------------------------------
 class GCNIIBackbone(nn.Module):
-    """200-layer GCNII backbone as required by Experiment 2."""
+    """GCNII backbone (configurable depth)."""
 
     def __init__(self, num_features: int, hidden_channels: int = 512, num_layers: int = 200):
         super().__init__()
-        self.convs = nn.ModuleList()
-        # First layer keeps original features dim
-        self.convs.append(GCN2Conv(num_features, hidden_channels, alpha=0.1, theta=0.5, layer=1))
-        # Hidden layers
-        for layer in range(2, num_layers + 1):
-            self.convs.append(GCN2Conv(hidden_channels, hidden_channels, alpha=0.1, theta=0.5, layer=layer))
+        self.lin_in = nn.Linear(num_features, hidden_channels, bias=True)
+        self.convs = nn.ModuleList([
+            GCN2Conv(hidden_channels, alpha=0.1, theta=0.5, layer=i + 1)
+            for i in range(num_layers)
+        ])
         self.lin_out = nn.Linear(hidden_channels, 1)
 
     def forward(self, x: torch.Tensor, edge_index: torch.Tensor):  # noqa: D401
-        out = x
+        x = F.relu(self.lin_in(x))
+        x0 = x  # initial representation as required by GCNII formulation
         for conv in self.convs:
-            out = F.relu(conv(out, edge_index))
-        return self.lin_out(out).squeeze(-1)
+            x = F.relu(conv(x, x0, edge_index))
+        return self.lin_out(x).squeeze(-1)
 
 
 class MonteMaskDrop(nn.Module):
@@ -180,7 +181,8 @@ class SafeFusePsi(nn.Module):
 # -------------------------------------------------
 # Local trainer (per silo) --------------------------------------------------------------
 # -------------------------------------------------
-from .preprocess import make_dataloaders  # relative import
+# NOTE: Use absolute import so that src can be executed as a loose collection of modules.
+from preprocess import make_dataloaders  # noqa: E402, isort: skip
 
 
 class LocalTrainer:  # pylint: disable=too-many-instance-attributes

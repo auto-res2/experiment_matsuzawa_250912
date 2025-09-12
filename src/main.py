@@ -24,7 +24,7 @@ from evaluate import log_metrics  # noqa: E402  pylint: disable=wrong-import-pos
 # ---------------------------------------------------------------------------
 # Mandatory research output paths
 # ---------------------------------------------------------------------------
-JSON_DIR = Path(".research/iteration3").resolve()
+JSON_DIR = Path(".research/iteration4").resolve()
 JSON_DIR.mkdir(parents=True, exist_ok=True)
 
 # ---------------------------------------------------------------------------
