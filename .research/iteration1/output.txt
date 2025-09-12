@@ -1,0 +1,4 @@
+=== uv sync start Fri Sep 12 08:36:26 AM UTC 2025 ===
+=== uv install end Fri Sep 12 08:37:22 AM UTC 2025 ===
+=== [PHASE 1/2] Smoke test start Fri Sep 12 08:37:22 AM UTC 2025 ===
+[main] Fatal error: Cannot access LAION dataset – Dataset 'laion/laion2B-en-aesthetic' is a gated dataset on the Hub. You must be authenticated to access it.
