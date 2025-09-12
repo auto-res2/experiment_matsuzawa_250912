@@ -1,0 +1,83 @@
+=== [PHASE 2/2] Full experiment start Fri Sep 12 03:45:40 AM UTC 2025 ===
+Loaded configuration: /home/toma/t-80-8-b-01/_work/experiment_matsuzawa_250912/experiment_matsuzawa_250912/config/full_experiment.yaml
+
+
+=== Experiment 1 – Full experimental run ===
+Epoch 1/10  loss=1.0695
+Epoch 2/10  loss=1.0205
+Epoch 3/10  loss=1.0447
+Epoch 4/10  loss=1.0086
+Epoch 5/10  loss=1.0482
+Epoch 6/10  loss=1.0370
+Epoch 7/10  loss=1.0038
+Epoch 8/10  loss=1.0243
+Epoch 9/10  loss=1.0196
+Epoch 10/10  loss=0.9919
+{
+  "timestamp": "2025-09-12T03:45:44.957220",
+  "loss_history": [
+    1.069525122642517,
+    1.0205485820770264,
+    1.044675350189209,
+    1.0086474418640137,
+    1.0481510162353516,
+    1.037006139755249,
+    1.0038056373596191,
+    1.024275541305542,
+    1.0195989608764648,
+    0.9919102191925049
+  ],
+  "num_epochs": 10
+}
+Figures generated:
+  /home/toma/t-80-8-b-01/_work/experiment_matsuzawa_250912/experiment_matsuzawa_250912/.research/iteration2/images/training_loss_cosmos.pdf
+
+=== Experiment 2 – Full experimental run ===
+{
+  "timestamp": "2025-09-12T03:45:45.176049",
+  "calibration": {
+    "M0": [
+      521.7587127769995,
+      544.5352621694943,
+      556.8395819459101,
+      503.1700302211572,
+      541.2885950238363
+    ],
+    "M1": [
+      535.2109933421706,
+      533.0691528611915,
+      505.5081024458606,
+      501.3468389395263,
+      519.2085552272149
+    ],
+    "M2": [
+      461.9592794249577,
+      193.92878256349167,
+      141.74680019506835,
+      99.40381589546561,
+      95.38983427385271
+    ]
+  }
+}
+Figures generated:
+  /home/toma/t-80-8-b-01/_work/experiment_matsuzawa_250912/experiment_matsuzawa_250912/.research/iteration2/images/calibration_time_modes.pdf
+
+=== Experiment 3 – Full experimental run ===
+{
+  "timestamp": "2025-09-12T03:45:45.253707",
+  "violation_rate": {
+    "\u03b5=0.005": 0.000245564947959509,
+    "\u03b5=0.010": 0.0022479772216047154,
+    "\u03b5=0.020": 0.007856747231014852,
+    "\u03b5=0.050": 0.01367728546906534
+  },
+  "gap_bound": {
+    "\u03b5=0.005": 0.015547637328585232,
+    "\u03b5=0.010": 0.014497742514375491,
+    "\u03b5=0.020": 0.01927209428295801,
+    "\u03b5=0.050": 0.04030369941580046
+  }
+}
+Figures generated:
+  /home/toma/t-80-8-b-01/_work/experiment_matsuzawa_250912/experiment_matsuzawa_250912/.research/iteration2/images/uvec_violation_rate.pdf
+=== [PHASE 2/2] Full experiment end Fri Sep 12 03:45:46 AM UTC 2025 ===
