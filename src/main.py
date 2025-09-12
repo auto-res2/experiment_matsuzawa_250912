@@ -16,7 +16,7 @@ import yaml
 
 REPO = pathlib.Path(__file__).resolve().parents[1]
 CONFIG_DIR = REPO / "config"
-RESEARCH_DIR = REPO / ".research" / "iteration1"
+RESEARCH_DIR = REPO / ".research" / "iteration2"
 IMAGE_DIR = RESEARCH_DIR / "images"
 
 for d in (CONFIG_DIR, IMAGE_DIR):
