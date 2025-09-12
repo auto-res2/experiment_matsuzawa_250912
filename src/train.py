@@ -110,11 +110,17 @@ class AoWHook(torch.autograd.Function):
 
     @staticmethod
     def forward(ctx, tensor: torch.Tensor):
-        sign = (tensor >= 0).type(torch.bool)
-        exponent_bit = (tensor.abs() > tensor.abs().median()).type(torch.bool)
+        # NOTE: Returning *tensor* directly would make the output a **view**. If any
+        # downstream operation performs an in-place update (as GCN2Conv does with
+        # `x.mul_`), PyTorch forbids this because it would destroy the association
+        # with the custom backward defined here.  We therefore CLONE the tensor so
+        # that the returned value is a standalone tensor (no longer a view) and can
+        # safely be modified in-place downstream.
+        sign = (tensor >= 0).to(torch.bool)
+        exponent_bit = (tensor.abs() > tensor.abs().median()).to(torch.bool)
         ctx.save_for_backward(sign, exponent_bit)
-        # Identity forward (tensor also returned to downstream ops)
-        return tensor
+        # Identity forward – but ensure we return a fresh tensor (no view)
+        return tensor.clone()
 
     @staticmethod
     def backward(ctx, grad_output: torch.Tensor):
@@ -134,6 +140,10 @@ def aow_wrap(module: nn.Module):
 
         def _forward(*args, **kwargs):  # noqa: D401 – simple wrapper
             return AoWHook.apply(orig_forward(*args, **kwargs))
+
+        # Preserve metadata for debuggability (best-effort, not critical)
+        _forward.__signature__ = getattr(orig_forward, "__signature__", None)
+        _forward.__name__ = orig_forward.__name__
 
         module.forward = _forward  # noqa: setattr-assignment
 
@@ -274,7 +284,11 @@ class LocalTrainer:  # pylint: disable=too-many-instance-attributes
         labels_t = torch.cat(labels)
         preds_np, labels_np = preds_t.numpy(), labels_t.numpy()
 
-        roc = roc_auc_score(labels_np, preds_np)
+        # Guard against single-class edge case which would crash roc_auc_score
+        if (labels_np == 0).all() or (labels_np == 1).all():
+            roc = 0.5  # non-informative baseline
+        else:
+            roc = roc_auc_score(labels_np, preds_np)
         pred_bin = (preds_np > 0.5).astype(int)
         f1 = f1_score(labels_np, pred_bin)
         brier = brier_score_loss(labels_np, preds_np)
