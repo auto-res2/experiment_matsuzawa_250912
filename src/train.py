@@ -125,7 +125,7 @@ def aow_wrap(module: nn.Module):
         def _forward(*args, **kwargs):  # noqa: D401 – simple wrapper
             return AoWHook.apply(orig_forward(*args, **kwargs))
 
-        module.forward = _forward
+        module.forward = _forward  # noqa: setattr-assignment
 
 
 # -------------------------------------------------
@@ -180,7 +180,7 @@ class SafeFusePsi(nn.Module):
 # -------------------------------------------------
 # Local trainer (per silo) --------------------------------------------------------------
 # -------------------------------------------------
-from preprocess import make_dataloaders  # fixed absolute import
+from .preprocess import make_dataloaders  # relative import
 
 
 class LocalTrainer:  # pylint: disable=too-many-instance-attributes
@@ -203,7 +203,9 @@ class LocalTrainer:  # pylint: disable=too-many-instance-attributes
         # Feature dim inference -----------------------------------------------------------------
         sample_graph = self.loader.dataset[0]
         if not hasattr(sample_graph, "x"):
-            raise RuntimeError("Dataset has no node features – SAFE-FUSE-Ψ requires features. STRICT NO-FALLBACK rule enforced.")
+            raise RuntimeError(
+                "Dataset has no node features – SAFE-FUSE-Ψ requires features. STRICT NO-FALLBACK rule enforced."
+            )
         num_features = sample_graph.x.size(-1)
 
         self.model = SafeFusePsi(num_features).to(device)

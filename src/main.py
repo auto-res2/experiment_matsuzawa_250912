@@ -8,16 +8,24 @@ import os
 from pathlib import Path
 from typing import List
 
-import torch
-from torch.utils.data import default_collate
+import sys
 
-from train import load_cfg, LocalTrainer
-from preprocess import load_graphs
-from evaluate import log_metrics
+# Ensure the project source directory is importable when the script is executed
+SRC_DIR = Path(__file__).resolve().parent
+if str(SRC_DIR) not in sys.path:
+    sys.path.insert(0, str(SRC_DIR))
 
-JSON_DIR = Path(".research/iteration2").resolve()
+import torch  # noqa: E402  pylint: disable=wrong-import-position
+
+from train import load_cfg, LocalTrainer  # noqa: E402  pylint: disable=wrong-import-position
+from preprocess import load_graphs  # noqa: E402  pylint: disable=wrong-import-position
+from evaluate import log_metrics  # noqa: E402  pylint: disable=wrong-import-position
+
+# ---------------------------------------------------------------------------
+# Mandatory research output paths
+# ---------------------------------------------------------------------------
+JSON_DIR = Path(".research/iteration3").resolve()
 JSON_DIR.mkdir(parents=True, exist_ok=True)
-
 
 # ---------------------------------------------------------------------------
 # Helper to run a single silo (non-federated for smoke/full demo)
@@ -67,7 +75,6 @@ def _run(cfg_path: Path):
 # ---------------------------------------------------------------------------
 # CLI
 # ---------------------------------------------------------------------------
-
 
 def parse_args():
     p = argparse.ArgumentParser("safe-fuse-psi")
