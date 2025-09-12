@@ -1,0 +1,58 @@
+=== [PHASE 2/2] Full experiment start Fri Sep 12 10:01:35 AM UTC 2025 ===
+[INFO] Using config: /home/toma/t-80-8-b-01/_work/experiment_matsuzawa_250912/experiment_matsuzawa_250912/config/full_experiment.yaml
+[WARN] tiger_compress unavailable – using stub implementation.
+
+======= EXPERIMENT DESCRIPTION =======
+
+{'experiment': 'full',
+ 'experiments': [{'budgets': [{'flops_g': 0.5, 'mem_mb': 0.25}],
+                  'datasets': {'cifar100_split10': {'url': 'https://www.cs.toronto.edu/~kriz/cifar-100-python.tar.gz'}},
+                  'methods': ['tiger_lite', 'er'],
+                  'name': 'exp1_joint_budget',
+                  'type': 'joint'}],
+ 'seeds': [13, 17, 23]}
+
+======= RAW NUMERICAL RESULTS =======
+
+[
+  {
+    "name": "exp1_joint_budget",
+    "budgets": [
+      {
+        "mem_mb": 0.25,
+        "flops_g": 0.5
+      }
+    ],
+    "runs": [
+      {
+        "seed": 13,
+        "dataset": "cifar100_split10",
+        "AA": 0.4626999999999999,
+        "BWT": null,
+        "memory_mb": 0.25,
+        "flops_cap_g": 0.5
+      },
+      {
+        "seed": 17,
+        "dataset": "cifar100_split10",
+        "AA": 0.46349999999999997,
+        "BWT": null,
+        "memory_mb": 0.25,
+        "flops_cap_g": 0.5
+      },
+      {
+        "seed": 23,
+        "dataset": "cifar100_split10",
+        "AA": 0.4736000000000001,
+        "BWT": null,
+        "memory_mb": 0.25,
+        "flops_cap_g": 0.5
+      }
+    ]
+  }
+]
+
+======= FIGURES GENERATED  =======
+
+accuracy_tiger_lite.pdf
+=== [PHASE 2/2] Full experiment end Fri Sep 12 10:03:27 AM UTC 2025 ===

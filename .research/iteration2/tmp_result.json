@@ -1,0 +1,35 @@
+{
+  "name": "exp1_joint_budget",
+  "budgets": [
+    {
+      "mem_mb": 0.25,
+      "flops_g": 0.5
+    }
+  ],
+  "runs": [
+    {
+      "seed": 13,
+      "dataset": "cifar100_split10",
+      "AA": 0.4626999999999999,
+      "BWT": null,
+      "memory_mb": 0.25,
+      "flops_cap_g": 0.5
+    },
+    {
+      "seed": 17,
+      "dataset": "cifar100_split10",
+      "AA": 0.46349999999999997,
+      "BWT": null,
+      "memory_mb": 0.25,
+      "flops_cap_g": 0.5
+    },
+    {
+      "seed": 23,
+      "dataset": "cifar100_split10",
+      "AA": 0.4736000000000001,
+      "BWT": null,
+      "memory_mb": 0.25,
+      "flops_cap_g": 0.5
+    }
+  ]
+}
