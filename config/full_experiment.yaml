@@ -1,0 +1,17 @@
+experiment: full
+seeds:
+  - 13
+  - 17
+  - 23
+experiments:
+  - name: exp1_joint_budget
+    type: joint
+    budgets:
+      - mem_mb: 0.25
+        flops_g: 0.5
+    datasets:
+      cifar100_split10:
+        url: https://www.cs.toronto.edu/~kriz/cifar-100-python.tar.gz
+    methods:
+      - tiger_lite
+      - er

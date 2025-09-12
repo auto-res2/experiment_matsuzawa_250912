@@ -1,0 +1,14 @@
+experiment: smoke
+seeds:
+  - 0
+experiments:
+  - name: smoke_cifar
+    type: joint
+    budgets:
+      - mem_mb: 1.0
+        flops_g: 1.0
+    datasets:
+      cifar100_split10:
+        url: https://www.cs.toronto.edu/~kriz/cifar-100-python.tar.gz
+    methods:
+      - tiger_lite
