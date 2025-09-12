@@ -22,9 +22,9 @@ from preprocess import load_graphs  # noqa: E402  pylint: disable=wrong-import-p
 from evaluate import log_metrics  # noqa: E402  pylint: disable=wrong-import-position
 
 # ---------------------------------------------------------------------------
-# Mandatory research output paths
+# Mandatory research output paths (iteration5 per requirements)
 # ---------------------------------------------------------------------------
-JSON_DIR = Path(".research/iteration4").resolve()
+JSON_DIR = Path(".research/iteration5").resolve()
 JSON_DIR.mkdir(parents=True, exist_ok=True)
 
 # ---------------------------------------------------------------------------

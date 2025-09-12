@@ -50,7 +50,7 @@ class TrainingCfg:
 @dataclass
 class DPCfg:
     epsilons: List[float]
-    delta: float
+    delta: float | str  # YAML often parses scientific notation as **str**
     max_grad_norm: float
 
 
@@ -76,11 +76,20 @@ def load_cfg(path: str | Path) -> ExperimentCfg:
     with p.open("r", encoding="utf8") as fh:
         raw: Dict[str, Any] = yaml.safe_load(fh)
 
+    # ----------------------------------------------------------------------------
+    # YAML 1.2 treats unquoted scientific notation (e.g. 1e-5) as **string**.
+    # We normalise here so downstream math works reliably.
+    # ----------------------------------------------------------------------------
+    def _as_float(value):
+        return float(value) if isinstance(value, (int, float, str)) else value
+
     datasets = {
         name: DatasetCfg(name=name, **cfg) for name, cfg in raw["datasets"].items()
     }
     training = TrainingCfg(**raw["training"])
-    dp = DPCfg(**raw["dp"])
+    dp_raw = raw["dp"].copy()
+    dp_raw["delta"] = _as_float(dp_raw.get("delta"))
+    dp = DPCfg(**dp_raw)
 
     exp_raw = raw.get("experiment", {})
     return ExperimentCfg(
@@ -230,9 +239,16 @@ class LocalTrainer:  # pylint: disable=too-many-instance-attributes
 
     # ------------------------------------------------------------------
     @staticmethod
-    def _sigma(epsilon: float, delta: float):
-        """Closed-form bound for Gaussian DP noise multiplier."""
-        return math.sqrt(2 * math.log(1.25 / delta)) / epsilon
+    def _sigma(epsilon: float, delta: float | str):
+        """Closed-form bound for Gaussian DP noise multiplier.
+
+        YAML may provide *delta* as a string (e.g. "1e-5"), so we coerce to
+        float here to avoid type errors in arithmetic operations.
+        """
+        delta_f = float(delta)
+        if epsilon <= 0 or delta_f <= 0:
+            raise ValueError("Epsilon and delta must be positive for DP accounting.")
+        return math.sqrt(2 * math.log(1.25 / delta_f)) / epsilon
 
     # ------------------------------------------------------------------
     def train_one_epoch(self):
@@ -273,6 +289,10 @@ class LocalTrainer:  # pylint: disable=too-many-instance-attributes
             accs.append(labels_np[mask].mean())
             confs.append(preds_np[mask].mean())
             cnts.append(mask.sum())
-        ece = sum(c * abs(a - c) for a, c in zip(accs, confs)) / max(sum(cnts), 1)
+        # Weight by counts (standard ECE definition)
+        ece = (
+            sum(cnt * abs(acc - conf) for acc, conf, cnt in zip(accs, confs, cnts))
+            / max(sum(cnts), 1)
+        )
 
         return {"roc_auc": float(roc), "macro_f1": float(f1), "brier": float(brier), "ece": float(ece)}
