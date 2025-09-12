@@ -6,5 +6,157 @@
     "transformer gradient checkpointing",
     "attention compression transformer",
     "low-memory diffusion training"
+  ],
+  "research_study_list": [
+    {
+      "title": "Finding NeMo: Localizing Neurons Responsible For Memorization in Diffusion Models"
+    },
+    {
+      "title": "Learning-to-Cache: Accelerating Diffusion Transformer via Layer Caching"
+    },
+    {
+      "title": "Recurrent Memory Transformer"
+    },
+    {
+      "title": "Ambient Diffusion: Learning Clean Distributions from Corrupted Data"
+    },
+    {
+      "title": "Analyzing Diffusion as Serial Reproduction"
+    },
+    {
+      "title": "EDT: An Efficient Diffusion Transformer Framework Inspired by Human-like Sketching"
+    },
+    {
+      "title": "Scalable High-Resolution Pixel-Space Image Synthesis with Hourglass Diffusion Transformers"
+    },
+    {
+      "title": "HOLODIFFUSION: Training a 3D Diffusion Model Using 2D Images"
+    },
+    {
+      "title": "Optical Diffusion Models for Image Generation"
+    },
+    {
+      "title": "Understanding and Mitigating Copying in Diffusion Models"
+    },
+    {
+      "title": "Fast and Memory-Efficient Video Diffusion Using Streamlined Inference"
+    },
+    {
+      "title": "Hollowed Net for On-Device Personalization of Text-to-Image Diffusion Models"
+    },
+    {
+      "title": "Multistep Distillation of Diffusion Models via Moment Matching"
+    },
+    {
+      "title": "SnapFusion: Text-to-Image Diffusion Model on Mobile Devices within Two Seconds"
+    },
+    {
+      "title": "Improving Training Efficiency of Diffusion Models via Multi-Stage Framework and Tailored Multi-Decoder Architecture"
+    },
+    {
+      "title": "DeepCache: Accelerating Diffusion Models for Free"
+    },
+    {
+      "title": "A Simple Early Exiting Framework for Accelerated Sampling in Diffusion Models"
+    },
+    {
+      "title": "Temporal Dynamic Quantization for Diffusion Models"
+    },
+    {
+      "title": "Learning-to-Cache: Accelerating Diffusion Transformer via Layer Caching"
+    },
+    {
+      "title": "Clockwork Diffusion: Efficient Generation With Model-Step Distillation"
+    },
+    {
+      "title": "Dynamic Tensor Rematerialization"
+    },
+    {
+      "title": "A fast heuristic to optimize time-space tradeoff for large models"
+    },
+    {
+      "title": "On Efficient Constructions of Checkpoints"
+    },
+    {
+      "title": "ExCP: Extreme LLM Checkpoint Compression via Weight-Momentum Joint Shrinking"
+    },
+    {
+      "title": "ExCP: Extreme LLM Checkpoint Compression via Weight-Momentum Joint Shrinking"
+    },
+    {
+      "title": "Coop: Memory is not a Commodity"
+    },
+    {
+      "title": "Tempo: Accelerating Transformer-Based Model Training through Memory Footprint Reduction"
+    },
+    {
+      "title": "Few-bit Backward: Quantized Gradients of Activation Functions for Memory Footprint Reduction"
+    },
+    {
+      "title": "Softmax Output Approximation for Activation Memory-Efficient Training of Attention-based Networks"
+    },
+    {
+      "title": "Memory Optimization for Deep Networks"
+    },
+    {
+      "title": "Combiner: Full Attention Transformer with Sparse Computation Cost"
+    },
+    {
+      "title": "Combiner: Full Attention Transformer with Sparse Computation Cost"
+    },
+    {
+      "title": "Compressive Transformers for Long-Range Sequence Modelling"
+    },
+    {
+      "title": "SAC: Accelerating and Structuring Self-Attention via Sparse Adaptive Connection"
+    },
+    {
+      "title": "Sparse Token Transformer with Attention Back Tracking"
+    },
+    {
+      "title": "COMCAT: Towards Efficient Compression and Customization of Attention-Based Vision Models"
+    },
+    {
+      "title": "Fast Transformers with Clustered Attention"
+    },
+    {
+      "title": "LoSparse: Structured Compression of Large Language Models based on Low-Rank and Sparse Approximation"
+    },
+    {
+      "title": "VCC: Scaling Transformers to 128K Tokens or More by Prioritizing Important Tokens"
+    },
+    {
+      "title": "LoRAP: Transformer Sub-Layers Deserve Differentiated Structured Compression for Large Language Models"
+    },
+    {
+      "title": "Hollowed Net for On-Device Personalization of Text-to-Image Diffusion Models"
+    },
+    {
+      "title": "Learning-to-Cache: Accelerating Diffusion Transformer via Layer Caching"
+    },
+    {
+      "title": "Ambient Diffusion: Learning Clean Distributions from Corrupted Data"
+    },
+    {
+      "title": "Multistep Distillation of Diffusion Models via Moment Matching"
+    },
+    {
+      "title": "Dimensionality-Varying Diffusion Process"
+    },
+    {
+      "title": "Structural Pruning for Diffusion Models"
+    },
+    {
+      "title": "Diffusion Probabilistic Model Made Slim"
+    },
+    {
+      "title": "HOLODIFFUSION: Training a 3D Diffusion Model Using 2D Images"
+    },
+    {
+      "title": "Diffusion Models Without Attention"
+    },
+    {
+      "title": "E$^2$GAN: Efficient Training of Efficient GANs for Image-to-Image Translation"
+    }
   ]
 }
