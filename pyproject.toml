@@ -1,21 +1,17 @@
-[build-system]
-requires = ["setuptools>=61.0"]
-build-backend = "setuptools.build_meta"
-
 [project]
-name = "cosmos_diff_experiments"
+name = "refactored-experiment"
 version = "0.1.0"
-description = "Reproducibility package for COSMOS-Diff experiments"
-requires-python = ">=3.9"
-readme = "README.md"
-license = {text = "MIT"}
+description = "Refactored multi-file version of the original single-script experiment."
 authors = [
-  {name = "OpenAI Assistant", email = "noreply@example.com"}
+  { name = "ML Researcher", email = "researcher@example.com" }
 ]
+requires-python = ">=3.9"
+
+# Correctly specify runtime dependencies as an ARRAY, not a mapping.
 dependencies = [
-  "torch>=2.0,<3.0",
-  "matplotlib>=3.0",
-  "pyyaml>=6.0"
+  "pyyaml>=6.0",
+  "torch>=1.9.0",
+  "numpy>=1.21.0",
 ]
 
 [tool.setuptools.packages.find]

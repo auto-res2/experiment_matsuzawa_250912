@@ -1,11 +1,12 @@
 # config/full_experiment.yaml
-# Full-scale configuration (longer training) – values are still
-# modest to keep automated evaluation tractable.
+# Full-scale configuration mirroring the original experimental setup.
+train:
+  epochs: 50
+  batch_size: 128
+  learning_rate: 1e-4
 
-description: "Full experimental run"
+data:
+  subset: null  # use the entire dataset
 
-training:
-  critic_lr: 0.0003
-  num_epochs: 10
-
-epsilons: [0.005, 0.01, 0.02, 0.05]
+model:
+  hidden_size: 512
