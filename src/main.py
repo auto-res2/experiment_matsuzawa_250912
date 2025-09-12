@@ -36,6 +36,46 @@ from .preprocess import (
 from .train import CelesteGNN, train_one_epoch
 
 # -----------------------------------------------------------------------------
+# Helper: auto-accept OGB download prompt (monkey-patch)
+# -----------------------------------------------------------------------------
+
+
+def _patch_ogb_download_prompt():
+    """Override the interactive prompt in *ogb* that asks for confirmation.
+
+    The original implementation uses ``input`` which crashes in non-interactive
+    CI environments (EOFError).  We monkey-patch both the canonical function
+    **and** the copy imported inside ``ogb.nodeproppred.dataset_pyg`` so that
+    *any* call site will receive an immediate "yes" without requiring stdin.
+    """
+
+    try:
+        import types
+
+        import ogb.utils.url as ogb_url  # noqa: WPS433 – runtime import required
+
+        def _always_yes(*_args, **_kwargs):  # noqa: D401 – simple stub
+            print("[INFO] Auto-accepting OGB dataset download (non-interactive mode).")
+            return True
+
+        # 1. Patch canonical location – other modules may import from here later.
+        ogb_url.decide_download = _always_yes  # reassign function
+
+        # 2. Patch *already imported* alias inside dataset module, if present.
+        try:
+            import ogb.nodeproppred.dataset_pyg as dataset_pyg  # noqa: WPS433
+
+            if isinstance(getattr(dataset_pyg, "decide_download", None), types.FunctionType):
+                dataset_pyg.decide_download = _always_yes  # reassign function in alias
+        except ImportError:
+            # The dataset module may not be imported yet (e.g. during smoke test).
+            pass
+    except ImportError:
+        # Not an error if ogb isn't used (e.g. during smoke test).
+        pass
+
+
+# -----------------------------------------------------------------------------
 # Core experiment logic (condensed EXP-1 replica)
 # -----------------------------------------------------------------------------
 
@@ -69,6 +109,7 @@ def _run_experiment_1(cfg: Dict, *, suffix: str) -> None:  # noqa: C901 – acce
         data = dataset[0]
     else:
         # Full experiment uses ogbn-products via OGB wrapper (handles its own download).
+        _patch_ogb_download_prompt()
         try:
             from ogb.nodeproppred import PygNodePropPredDataset
         except ImportError:
@@ -175,6 +216,7 @@ def _placeholder_experiment(exp_name: str, dataset_key: str, cfg: Dict, suffix: 
 
     # Special-case ogbn-products because OGB will handle the download internally.
     if dataset_key == "temporal_ogbn_products":
+        _patch_ogb_download_prompt()
         try:
             from ogb.nodeproppred import PygNodePropPredDataset
         except ImportError:

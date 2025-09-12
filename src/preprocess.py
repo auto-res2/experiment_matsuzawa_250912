@@ -22,8 +22,8 @@ import yaml
 ROOT = Path(__file__).resolve().parents[1]
 CONFIG_DIR = ROOT / "config"
 DATA_DIR = ROOT / "data"
-# IMPORTANT: iteration **3** per rubric
-RESEARCH_DIR = ROOT / ".research" / "iteration3"
+# IMPORTANT: iteration **4** as mandated by the rubric
+RESEARCH_DIR = ROOT / ".research" / "iteration4"
 RESULTS_DIR = RESEARCH_DIR  # JSON files are stored directly here
 IMAGES_DIR = RESEARCH_DIR / "images"
 
