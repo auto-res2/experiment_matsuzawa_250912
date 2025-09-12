@@ -1,0 +1,18 @@
+{
+  "phase": "full_experiment",
+  "preprocess": {
+    "preprocess_status": "skipped (no preprocessing code provided in reference script)",
+    "samples_processed": 0
+  },
+  "train": {
+    "train_status": "skipped (no model code provided in reference script)",
+    "cfg_hash": 4273558887,
+    "dummy_loss": 0.0
+  },
+  "eval": {
+    "eval_status": "skipped (no evaluation code provided in reference script)",
+    "accuracy": 0.0,
+    "loss": 0.0
+  },
+  "status": "completed (logic stub \u2013 integrate real models)"
+}
