@@ -1,5 +1,5 @@
 # src/main.py
-"""Command-line entry-point.
+"""Command-line entry-point with robust compatibility patches.
 
 This script supports the following execution patterns (examples use *uv* as
 requested):
@@ -16,12 +16,13 @@ import argparse
 import json
 import sys
 from datetime import datetime
+from functools import wraps
 from pathlib import Path
 from typing import Dict
 
 import torch
 from torch import nn, optim
-from tqdm import tqdm  # noqa: F401 – tqdm is required in train loop imports
+from tqdm import tqdm  # noqa: F401 – required in train loop imports
 
 from .evaluate import evaluate, plot_metrics
 from .preprocess import (
@@ -36,22 +37,58 @@ from .preprocess import (
 from .train import CelesteGNN, train_one_epoch
 
 # -----------------------------------------------------------------------------
+# Compatibility patch: revert Torch 2.6 "weights_only=True" default
+# -----------------------------------------------------------------------------
+
+
+def _patch_torch_load_weights_only():
+    """Ensure *torch.load* behaves like pre-2.6 versions (``weights_only=False``).
+
+    Torch 2.6 changed the default of ``weights_only`` from ``False`` to ``True``.
+    Unfortunately, external libraries such as *OGB* call ``torch.load`` without
+    explicitly overriding the default, which breaks deserialisation of objects
+    that are *not* pure state_dicts (e.g. PyG ``Data`` instances).  We monkey-
+    patch ``torch.load`` so that **unless the caller specifies otherwise**, we
+    force ``weights_only=False``.  The wrapper gracefully falls back for older
+    Torch versions that do not accept the argument.
+    """
+
+    # Idempotent safeguard so that we never wrap twice when the module is
+    # re-loaded (e.g. by certain test runners).
+    if getattr(torch.load, "_celeste_weights_only_patched", False):
+        return
+
+    original_load = torch.load
+
+    @wraps(original_load)
+    def _wrapper(f, *args, **kwargs):  # noqa: D401 – simple passthrough
+        if "weights_only" not in kwargs:
+            kwargs["weights_only"] = False
+            try:
+                return original_load(f, *args, **kwargs)
+            except TypeError:
+                # Older Torch – retry without the extra kwarg
+                kwargs.pop("weights_only", None)
+                return original_load(f, *args, **kwargs)
+        return original_load(f, *args, **kwargs)
+
+    # Mark the function so that we can detect the patch later on.
+    setattr(_wrapper, "_celeste_weights_only_patched", True)
+    torch.load = _wrapper  # noqa: PGH003 – intentional monkey patch
+
+
+_patch_torch_load_weights_only()
+
+# -----------------------------------------------------------------------------
 # Helper: auto-accept OGB download prompt (monkey-patch)
 # -----------------------------------------------------------------------------
 
 
 def _patch_ogb_download_prompt():
-    """Override the interactive prompt in *ogb* that asks for confirmation.
-
-    The original implementation uses ``input`` which crashes in non-interactive
-    CI environments (EOFError).  We monkey-patch both the canonical function
-    **and** the copy imported inside ``ogb.nodeproppred.dataset_pyg`` so that
-    *any* call site will receive an immediate "yes" without requiring stdin.
-    """
+    """Override the interactive prompt in *ogb* that asks for confirmation."""
 
     try:
         import types
-
         import ogb.utils.url as ogb_url  # noqa: WPS433 – runtime import required
 
         def _always_yes(*_args, **_kwargs):  # noqa: D401 – simple stub
@@ -59,14 +96,14 @@ def _patch_ogb_download_prompt():
             return True
 
         # 1. Patch canonical location – other modules may import from here later.
-        ogb_url.decide_download = _always_yes  # reassign function
+        setattr(ogb_url, "decide_download", _always_yes)
 
         # 2. Patch *already imported* alias inside dataset module, if present.
         try:
             import ogb.nodeproppred.dataset_pyg as dataset_pyg  # noqa: WPS433
 
             if isinstance(getattr(dataset_pyg, "decide_download", None), types.FunctionType):
-                dataset_pyg.decide_download = _always_yes  # reassign function in alias
+                setattr(dataset_pyg, "decide_download", _always_yes)
         except ImportError:
             # The dataset module may not be imported yet (e.g. during smoke test).
             pass
@@ -205,7 +242,6 @@ def _run_experiment_1(cfg: Dict, *, suffix: str) -> None:  # noqa: C901 – acce
 # Placeholder for EXP-2 / EXP-3 – dataset availability check only
 # -----------------------------------------------------------------------------
 
-
 def _placeholder_experiment(exp_name: str, dataset_key: str, cfg: Dict, suffix: str) -> None:
     print(f"\n=== {exp_name.upper()} – FULL IMPLEMENTATION NOT SHOWN IN DEMO ===")
     print(
@@ -245,7 +281,6 @@ def _placeholder_experiment(exp_name: str, dataset_key: str, cfg: Dict, suffix: 
 # -----------------------------------------------------------------------------
 # CLI utility
 # -----------------------------------------------------------------------------
-
 
 def _parse_args():
     parser = argparse.ArgumentParser(description="Run CELESTE experiments.")

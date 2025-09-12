@@ -22,8 +22,11 @@ import yaml
 ROOT = Path(__file__).resolve().parents[1]
 CONFIG_DIR = ROOT / "config"
 DATA_DIR = ROOT / "data"
-# IMPORTANT: iteration **4** as mandated by the rubric
-RESEARCH_DIR = ROOT / ".research" / "iteration4"
+# IMPORTANT: iteration **5** as mandated by the rubric (images must be saved to
+# `.research/iteration5/images` and JSON to `.research/iteration5/`).  All code
+# that relies on these paths (main.py et al.) imports the constants below, so a
+# single change keeps the whole project in sync.
+RESEARCH_DIR = ROOT / ".research" / "iteration5"
 RESULTS_DIR = RESEARCH_DIR  # JSON files are stored directly here
 IMAGES_DIR = RESEARCH_DIR / "images"
 
