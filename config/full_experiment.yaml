@@ -1,0 +1,44 @@
+# config/full_experiment.yaml
+# -----------------------------------------------------------------------------
+# Full-scale configuration – copied 1:1 from the original resources/config.yaml
+# (URLs are left null to honour the STRICT NO-FALLBACK RULE; users must fill
+# them in before launching the real experiment).
+# -----------------------------------------------------------------------------
+
+version: 1.0
+
+hardware:
+  gpus: 8
+  vram_gb_per_gpu: 80
+  ram_gb: 2048
+
+models:
+  mobilenet_v2_075:
+    hf_hub_id: "google/mobilenet_v2_0.75_160"
+    quantisation: "int8"
+  efficientnet_b0:
+    hf_hub_id: "timm/efficientnet_b0.ra_in1k"
+    quantisation: "int8"
+
+hyperparameters:
+  semm:
+    stable_matching_degree: 4
+    gossip_interval_s: 4
+    token_ttl_min: 30
+  zpf:
+    hidden_units: 256
+    tau_forget: 0.02
+  cibi:
+    gamma_bias_threshold: 0.1
+    lambda_causal: 0.1
+
+datasets:
+  HiddenBias-Cars:
+    url: null
+    sha256: null
+  Intersect-Faces:
+    url: null
+    sha256: null
+  CubeSat-Drift:
+    url: null
+    sha256: null

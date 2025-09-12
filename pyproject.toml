@@ -1,1 +1,21 @@
-# Please list the required python packages.
+[project]
+name = "cipher-omega"
+version = "0.1.0"
+description = "Refactored scaffold for the CIPHER-Ω continual-learning experiments"
+readme = "README.md"
+requires-python = ">=3.9"
+
+# Keep dependency list minimal and aligned with the original single-file script
+# plus the new PyYAML requirement for configuration handling.
+
+dependencies = [
+  "PyYAML>=6.0",
+  "requests>=2.31.0",
+  "torch>=1.9.0"
+]
+
+[tool.setuptools]
+package-dir = {"" = "src"}
+
+[tool.setuptools.package-data]
+"" = ["*.yaml"]

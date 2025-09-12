@@ -1,0 +1,39 @@
+# config/smoke_test.yaml
+# -----------------------------------------------------------------------------
+# A minimal configuration used for quick end-to-end validation.  We keep the
+# structure identical to the full config while using dummy (yet syntactically
+# valid) URLs that point to a small public file.  The STRICT NO-FALLBACK RULE
+# still applies – the URL *must* exist.  For demonstration we reference a tiny
+# raw GitHub file that is guaranteed to be reachable.
+# -----------------------------------------------------------------------------
+
+version: 1.0
+
+hardware:
+  gpus: 1
+  vram_gb_per_gpu: 1
+  ram_gb: 2
+
+models:
+  mobilenet_v2_075:
+    hf_hub_id: "google/mobilenet_v2_0.75_160"
+    quantisation: "int8"
+
+after_smoke_only: true  # marker key to show difference from full config
+
+hyperparameters:
+  semm:
+    stable_matching_degree: 2
+    gossip_interval_s: 1
+    token_ttl_min: 5
+  zpf:
+    hidden_units: 32
+    tau_forget: 0.1
+  cibi:
+    gamma_bias_threshold: 0.5
+    lambda_causal: 0.0
+
+datasets:
+  Tiny-Example:
+    url: "https://raw.githubusercontent.com/github/explore/main/README.md"
+    sha256: "dummy"
