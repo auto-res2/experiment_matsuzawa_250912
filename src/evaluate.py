@@ -1,5 +1,10 @@
 # src/evaluate.py
-"""Evaluation helpers (translation quality, latency, energy, plotting)."""
+"""Evaluation helpers (translation quality, latency, energy, plotting).
+
+This module additionally takes care of persisting results & figures under the
+mandatory iteration-9 research directory so that downstream tooling can pick
+up the artefacts automatically.
+"""
 from __future__ import annotations
 
 import json
@@ -85,7 +90,7 @@ def evaluate_translation(
     # ------------------------------------------------------------------
     # store JSON in research folder & print to stdout for verification
     # ------------------------------------------------------------------
-    research_dir = os.path.join(".research", "iteration8")
+    research_dir = os.path.join(".research", "iteration9")
     os.makedirs(research_dir, exist_ok=True)
     json_path = os.path.join(research_dir, f"{cfg.experiment_name}.json")
     with open(json_path, "w", encoding="utf-8") as fp:
@@ -98,7 +103,7 @@ def evaluate_translation(
 
 
 # ---------------------------------------------------------------------------
-# plotting – saved under .research/iteration8/images
+# plotting – saved under .research/iteration9/images
 # ---------------------------------------------------------------------------
 
 
@@ -123,7 +128,7 @@ def bar_plot(metric_dict: dict, metric_key: str, title: str, file_stem: str) -> 
     plt.xticks(rotation=45)
     plt.tight_layout()
 
-    images_dir = os.path.join(".research", "iteration8", "images")
+    images_dir = os.path.join(".research", "iteration9", "images")
     os.makedirs(images_dir, exist_ok=True)
     pdf_path = os.path.join(images_dir, f"{file_stem}.pdf")
     plt.savefig(pdf_path, bbox_inches="tight")
