@@ -1,5 +1,0 @@
-experiment: full
-dataset_split: "test[:100%]"
-dataset_proportion: 1.0
-teacher_model: "Helsinki-NLP/opus-mt-en-de"
-quadron_model: "Helsinki-NLP/opus-mt-en-de"
