@@ -1,0 +1,7 @@
+{
+  "status": {
+    "ALIGN-16": "skipped_in_smoke",
+    "HIL-12": "skipped_in_smoke",
+    "FACE-80": "skipped_in_smoke"
+  }
+}

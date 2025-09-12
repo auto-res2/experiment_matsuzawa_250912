@@ -1,0 +1,12 @@
+Traceback (most recent call last):
+  File "<frozen runpy>", line 198, in _run_module_as_main
+  File "<frozen runpy>", line 88, in _run_code
+  File "/home/toma/t-80-8-b-03/_work/experiment_matsuzawa_250912/experiment_matsuzawa_250912/src/main.py", line 97, in <module>
+    main()
+  File "/home/toma/t-80-8-b-03/_work/experiment_matsuzawa_250912/experiment_matsuzawa_250912/src/main.py", line 93, in main
+    _execute(full_cfg)
+  File "/home/toma/t-80-8-b-03/_work/experiment_matsuzawa_250912/experiment_matsuzawa_250912/src/main.py", line 51, in _execute
+    init_logger(out_dir / "metrics.json")
+  File "/home/toma/t-80-8-b-03/_work/experiment_matsuzawa_250912/experiment_matsuzawa_250912/src/evaluate.py", line 56, in init_logger
+    raise RuntimeError("Logger already initialised – double initialisation")
+RuntimeError: Logger already initialised – double initialisation
