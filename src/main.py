@@ -1,15 +1,6 @@
 """src/main.py
-Main orchestration entry-point for the refactored CIPHER-Ω experiment.
-Supports two execution modes:
-    1. Smoke test  – quick sanity check without external network traffic.
-    2. Full experiment – performs the strict dataset URL validation from the
-       original script.
-Run via:
-    # Smoke test only
-    uv run python -m src.main --smoke-test
-
-    # Full experiment only
-    uv run python -m src.main --full-experiment
+Main orchestration entry-point – updated to comply with mandatory directory
+layout (.research/iteration2) and image path requirement.
 """
 from __future__ import annotations
 
@@ -22,9 +13,8 @@ from typing import Any, Dict
 
 import yaml
 
-# Third-party modules used only in full experiment mode.  We keep the import
-# here (rather than lazy-importing) so that dependency resolution is immediate
-# and fails fast if the package is missing.
+# Third-party modules used only in full experiment mode.  Kept here to fail fast
+# on missing deps.
 import requests
 import torch  # noqa: F401 – imported solely to guarantee PyTorch availability
 
@@ -33,11 +23,11 @@ from .train import run_training_pipeline
 from .evaluate import run_evaluation_pipeline
 
 # -----------------------------------------------------------------------------
-# Paths & constants
+# Paths & constants (iteration **2** as mandated by instructions)
 # -----------------------------------------------------------------------------
 _PROJECT_ROOT = Path(__file__).resolve().parents[1]
 _CONFIG_DIR = _PROJECT_ROOT / "config"
-_RESULT_DIR = _PROJECT_ROOT / ".research" / "iteration1"
+_RESULT_DIR = _PROJECT_ROOT / ".research" / "iteration2"
 _IMAGE_DIR = _RESULT_DIR / "images"
 
 _SMOKE_CONFIG = _CONFIG_DIR / "smoke_test.yaml"
@@ -49,7 +39,7 @@ _IMAGE_DIR.mkdir(parents=True, exist_ok=True)
 _DATA_DIR.mkdir(exist_ok=True)
 
 # -----------------------------------------------------------------------------
-# Utility helpers (carried over from original monolithic script)
+# Utility helpers (unchanged apart from path update comments)
 # -----------------------------------------------------------------------------
 
 def sha256sum(file_path: Path) -> str:
@@ -100,8 +90,6 @@ def _validate_models(cfg: Dict[str, Any]) -> None:
 
 def _run_smoke_test(cfg: Dict[str, Any]) -> Dict[str, Any]:
     """Execute a quick end-to-end pass without external network usage."""
-    # We intentionally *skip* network reachability checks; only structural
-    # validation is performed.
     _validate_models(cfg)
     _validate_datasets(cfg)
 
@@ -124,7 +112,7 @@ def _run_full_experiment(cfg: Dict[str, Any]) -> Dict[str, Any]:
     _validate_models(cfg)
     _validate_datasets(cfg)
 
-    # Check first dataset reachability – copied verbatim from original code.
+    # Reachability check for first dataset.
     first_ds_name, first_ds = next(iter(cfg["datasets"].items()))
     first_url = first_ds["url"]
     print(f"Checking reachability of dataset '{first_ds_name}' at {first_url} …", flush=True)
@@ -135,7 +123,6 @@ def _run_full_experiment(cfg: Dict[str, Any]) -> Dict[str, Any]:
     if head_resp.status_code >= 400:
         human_error(f"Dataset URL {first_url} returned HTTP {head_resp.status_code}.")
 
-    # Placeholder for the real pipelines
     preprocess_metrics = run_preprocessing_pipeline(cfg)
     train_metrics = run_training_pipeline(cfg)
     eval_metrics = run_evaluation_pipeline(cfg)

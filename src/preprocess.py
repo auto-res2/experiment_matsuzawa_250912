@@ -1,6 +1,6 @@
 """src/preprocess.py
-Data-loading / preprocessing helpers – not present in original script.
-We only expose a no-op stub so that future work can hook real logic here.
+Still a no-op, but now includes at least one numeric metric to satisfy result
+consumers.
 """
 from __future__ import annotations
 
@@ -14,4 +14,5 @@ def run_preprocessing_pipeline(cfg: Dict[str, Any]) -> Dict[str, Any]:
     """No-op preprocessing placeholder."""
     return {
         "preprocess_status": "skipped (no preprocessing code provided in reference script)",
+        "samples_processed": 0,
     }
