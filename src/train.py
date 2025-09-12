@@ -106,6 +106,8 @@ def continual_train(
 
     metrics: Dict[str, List[float]] = {"task_acc": []}
 
+    epochs = cfg.get("epochs_per_task", 1)
+
     for task_id, task_ds in enumerate(tasks):
         loader = torch.utils.data.DataLoader(
             task_ds,
@@ -116,19 +118,20 @@ def continual_train(
         )
 
         # -------------------------- training loop ---------------------
-        for x, y in loader:
-            x, y = x.to(device), y.to(device)
-            est_flops = _rough_flop_estimate(x.size(0))
-            with wd.track(est_flops):
-                logits = model(x, task_id)
-                loss = F.cross_entropy(logits, y)
-                loss.backward()
-                optimiser.step()
-                optimiser.zero_grad(set_to_none=True)
+        for _ in range(epochs):
+            for x, y in loader:
+                x, y = x.to(device), y.to(device)
+                est_flops = _rough_flop_estimate(x.size(0))
+                with wd.track(est_flops):
+                    logits = model(x, task_id)
+                    loss = F.cross_entropy(logits, y)
+                    loss.backward()
+                    optimiser.step()
+                    optimiser.zero_grad(set_to_none=True)
 
-                # buffer update (may be a no-op depending on implementation)
-                if hasattr(model, "buffer") and callable(getattr(model, "fisher_score", None)):
-                    model.buffer.maybe_add(model.fisher_score(loss), (x.cpu(), y.cpu()))
+                    # buffer update (may be a no-op depending on implementation)
+                    if hasattr(model, "buffer") and callable(getattr(model, "fisher_score", None)):
+                        model.buffer.maybe_add(model.fisher_score(loss), (x.cpu(), y.cpu()))
 
         # -------------------------- quick evaluation ------------------
         acc = evaluate_task(model, task_ds, device, task_id)

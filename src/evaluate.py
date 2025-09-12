@@ -12,7 +12,11 @@ import torch
 
 sns.set_theme(style="whitegrid")
 
-_RESULTS = pathlib.Path(".research/iteration3")
+# -----------------------------------------------------------------------------
+#   Paths – mandatory locations (see instructions)
+# -----------------------------------------------------------------------------
+
+_RESULTS = pathlib.Path(".research/iteration4/images")
 _RESULTS.mkdir(parents=True, exist_ok=True)
 
 __all__ = [
