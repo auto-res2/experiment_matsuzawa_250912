@@ -1,0 +1,82 @@
+=== [PHASE 2/2] Full experiment start Fri Sep 12 03:58:12 AM UTC 2025 ===
+
+================  Smoke Test  ================
+
+Running ALIGN-16 experiment – End-to-End Alignment Test-bed
+
+
+=======  Experiment Results  =======
+{
+  "status": {
+    "ALIGN-16": "skipped_in_smoke"
+  }
+}
+===================================
+
+Running HIL-12 Hardware-in-the-Loop experiment
+
+
+=======  Experiment Results  =======
+{
+  "status": {
+    "HIL-12": "skipped_in_smoke"
+  }
+}
+===================================
+
+Running FACE-80 Causal & Intersectional Bias Audit
+
+
+=======  Experiment Results  =======
+{
+  "status": {
+    "FACE-80": "skipped_in_smoke"
+  }
+}
+===================================
+
+
+==============  Full Experiment  =============
+
+Running ALIGN-16 experiment – End-to-End Alignment Test-bed
+
+
+=======  Experiment Results  =======
+{}
+===================================
+
+
+[ABORT] ALIGN-16: Dataset 'hiddenbias_cars' has no download URL – cannot continue.
+
+
+=======  Experiment Results  =======
+{}
+===================================
+
+
+=======  Experiment Results  =======
+{
+  "status": {
+    "FACE-80": "skipped_in_smoke"
+  }
+}
+===================================
+
+
+=======  Experiment Results  =======
+{
+  "status": {
+    "HIL-12": "skipped_in_smoke"
+  }
+}
+===================================
+
+
+=======  Experiment Results  =======
+{
+  "status": {
+    "ALIGN-16": "skipped_in_smoke"
+  }
+}
+===================================
+
