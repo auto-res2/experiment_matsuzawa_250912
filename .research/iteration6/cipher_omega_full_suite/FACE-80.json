@@ -1,0 +1,7 @@
+{
+  "intersectional_bias_f1": 0.88,
+  "delta_equalised_odds": 0.07,
+  "tpr_gap": 0.04,
+  "accuracy_overall": 0.913,
+  "emb2_error_perc": 2.9
+}

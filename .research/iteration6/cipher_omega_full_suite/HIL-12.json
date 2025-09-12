@@ -1,0 +1,7 @@
+{
+  "energy_per_replay_mJ": 0.68,
+  "epsilon_violation_rate_perc": 0.7,
+  "wall_clock_latency_ms": 12.3,
+  "accuracy_overall": 0.945,
+  "emb2_error_perc": 4.1
+}

@@ -1,0 +1,8 @@
+{
+  "byte_credit_utilisation": 0.85,
+  "catastrophic_forget_rate": 0.02,
+  "radio_bandwidth_bps_p99": 55000,
+  "radio_bandwidth_bps_mean": 32000,
+  "rebalance_time_s": 6.1,
+  "emb2_error_perc": 3.4
+}
