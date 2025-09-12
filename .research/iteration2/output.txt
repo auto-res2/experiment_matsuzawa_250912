@@ -1,0 +1,20 @@
+=== [PHASE 2/2] Full experiment start Fri Sep 12 10:03:25 AM UTC 2025 ===
+[INFO] Running mandatory smoke test before full experiment…
+================  EXPERIMENT 1  ================
+Full description: Latency / Energy / Quality on WMT14 En→De
+{
+  "latency_ms_mean": 221.07680750389895,
+  "latency_ms_std": 140.5206392322979,
+  "energy_j_mean": 16.402133321762086,
+  "bleu_mean": 20.981683936404462
+}
+[INFO] Smoke test succeeded – starting full experiment…
+================  EXPERIMENT 1  ================
+Full description: Latency / Energy / Quality on WMT14 En→De
+{
+  "latency_ms_mean": 182.60700279574493,
+  "latency_ms_std": 86.28907073079851,
+  "energy_j_mean": 13.67849084213897,
+  "bleu_mean": 26.053882836493795
+}
+=== [PHASE 2/2] Full experiment end Fri Sep 12 10:13:26 AM UTC 2025 ===
