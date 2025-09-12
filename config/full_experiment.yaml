@@ -1,0 +1,25 @@
+# config/full_experiment.yaml
+
+experiment:
+  name: "full_experiment"
+  output_dir: "results"
+  variants: ["aow"]
+
+datasets:
+  synth_medium:
+    uri: "synthetic://medium"
+    split_strategy: "none"
+    window_nodes: 1000
+    window_edges: 5000
+
+training:
+  epochs_per_snapshot: 2
+  lr: 0.005
+  weight_decay: 1e-4
+  batch_edges: 1024
+  seeds: [0]
+
+dp:
+  epsilons: [5.0]
+  delta: 1e-5
+  max_grad_norm: 1.0

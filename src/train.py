@@ -180,7 +180,7 @@ class SafeFusePsi(nn.Module):
 # -------------------------------------------------
 # Local trainer (per silo) --------------------------------------------------------------
 # -------------------------------------------------
-from .preprocess import make_dataloaders  # circular-free – preprocess only uses torch
+from preprocess import make_dataloaders  # fixed absolute import
 
 
 class LocalTrainer:  # pylint: disable=too-many-instance-attributes
@@ -189,7 +189,7 @@ class LocalTrainer:  # pylint: disable=too-many-instance-attributes
     def __init__(
         self,
         silo_id: str,
-        graphs: List[Dict],
+        graphs: List[Any],  # List of torch_geometric.data.Data
         cfg: ExperimentCfg,
         epsilon: float,
         delta: float,
@@ -210,7 +210,9 @@ class LocalTrainer:  # pylint: disable=too-many-instance-attributes
         if "aow" in cfg.variants:
             aow_wrap(self.model)
 
-        self.opt = torch.optim.AdamW(self.model.parameters(), lr=cfg.training.lr, weight_decay=cfg.training.weight_decay)
+        self.opt = torch.optim.AdamW(
+            self.model.parameters(), lr=cfg.training.lr, weight_decay=cfg.training.weight_decay
+        )
 
         # Differential privacy ------------------------------------------------------------------
         self.privacy_engine = PrivacyEngine()

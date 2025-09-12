@@ -1,0 +1,25 @@
+# config/smoke_test.yaml
+
+experiment:
+  name: "smoke_test"
+  output_dir: "results"
+  variants: ["aow"]
+
+datasets:
+  synth_small:
+    uri: "synthetic://small"
+    split_strategy: "none"
+    window_nodes: 100
+    window_edges: 300
+
+training:
+  epochs_per_snapshot: 1
+  lr: 0.01
+  weight_decay: 0.0
+  batch_edges: 128
+  seeds: [0]
+
+dp:
+  epsilons: [10.0]
+  delta: 1e-5
+  max_grad_norm: 1.0
