@@ -1,0 +1,40 @@
+=== [PHASE 2/2] Full experiment start Fri Sep 12 04:14:51 AM UTC 2025 ===
+
+=== EXPERIMENT 1 – END-TO-END LIFE-CYCLE BENCHMARK (condensed demo) ===
+Epoch 01/2 – loss: 1.3934 – test-accuracy: 0.0000
+Epoch 02/2 – loss: 1.3827 – test-accuracy: 0.0000
+
+--- EXPERIMENT DESCRIPTION --------------------------------------------------
+Condensed replication of EXP-1 on a tiny built-in dataset for the smoke
+test and on ogbn-products for the full run.  Fairness/DP noise and
+carbon budgeting are omitted for brevity, but the optimiser setup and
+evaluation hooks are identical to the full experiment.
+---------------------------------------------------------------------------
+
+{
+  "timestamp": "2025-09-12T04:14:56.665299",
+  "dataset": "karate_club (smoke)",
+  "epochs": 2,
+  "best_test_accuracy": 0.0,
+  "train_loss_curve": [
+    1.393384575843811,
+    1.382651686668396
+  ],
+  "test_acc_curve": [
+    0.0,
+    0.0
+  ]
+}
+
+[INFO] Figure saved: training_loss_accuracy_smoke.pdf
+
+
+=== EXPERIMENT 1 – END-TO-END LIFE-CYCLE BENCHMARK (condensed demo) ===
+[INFO] Auto-accepting OGB dataset download (non-interactive mode).
+Downloading http://snap.stanford.edu/ogb/data/nodeproppred/products.zip
+Extracting /home/toma/t-80-8-b-01/_work/experiment_matsuzawa_250912/experiment_matsuzawa_250912/data/temporal_ogbn_products/products.zip
+Loading necessary files...
+This might take a while.
+Processing graphs...
+Converting graphs into PyG objects...
+Saving...
