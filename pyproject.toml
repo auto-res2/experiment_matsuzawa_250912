@@ -1,1 +1,16 @@
-# Please list the required python packages.
+[project]
+name = "cadence_experiments"
+version = "0.1.0"
+description = "Refactored CADENCE experimental suite (smoke + full runs)"
+authors = ["Researcher <research@example.com>"]
+requires-python = ">=3.9"
+
+# Dependency *array* – order matters for some build back-ends, keep torch first
+# to avoid vision-related wheels being pulled before the core install.
+dependencies = [
+    "torch>=1.9.0",
+    "pyyaml>=6.0",
+    "datasets>=2.16.0",
+    "matplotlib>=3.8.0",
+    "safetensors>=0.3.0",
+]

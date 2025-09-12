@@ -1,0 +1,18 @@
+random_seed: 23
+experiments:
+  - name: Skip-with-Certainty
+    description: Full Experiment-1 over 50k prompts, DTCS vs baselines.
+    active: true
+    params:
+      n_prompts: 50000
+      tau1: 0.8
+      tau2: 0.05
+      seed: 17
+  - name: Patch-Picks-Matter
+    description: Full Experiment-2 HBM evaluation.
+    active: true
+    params: {}
+  - name: Tiny-Green-on-the-Edge
+    description: Full Experiment-3 on mobile devices.
+    active: true
+    params: {}

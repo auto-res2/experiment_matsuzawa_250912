@@ -1,0 +1,14 @@
+random_seed: 23
+experiments:
+  - name: Skip-with-Certainty-SMOKE
+    description: Minimal run – 128 prompts to verify DTCS pipeline.
+    active: true
+    params:
+      n_prompts: 128
+      tau1: 0.8
+      tau2: 0.05
+      seed: 17
+  - name: Patch-Picks-Matter-SMOKE
+    description: HBM smoke – dummy comparison.
+    active: false
+    params: {}
