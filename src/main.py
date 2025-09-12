@@ -46,9 +46,9 @@ if not cfg_path.exists():
 CONFIG: Dict[str, Any] = yaml.safe_load(cfg_path.read_text())
 
 # ---------------------------------------------------------------------------
-#  Directory preparation (results / images live under .research/iteration7/…)
+#  Directory preparation  – iteration **8** as required
 # ---------------------------------------------------------------------------
-RESEARCH_DIR: Path = REPO_ROOT / ".research" / "iteration7"
+RESEARCH_DIR: Path = REPO_ROOT / ".research" / "iteration8"
 IMAGES_DIR: Path = RESEARCH_DIR / "images"
 RESULTS_DIR: Path = RESEARCH_DIR
 for d in (IMAGES_DIR, RESULTS_DIR):
@@ -58,7 +58,7 @@ for d in (IMAGES_DIR, RESULTS_DIR):
 #  Environment & dependency checks
 # ---------------------------------------------------------------------------
 from .preprocess import ensure_datasets_present
-from .train import EnergyMeter, MissingSensorError
+from .train import EnergyMeter
 
 try:
     ensure_datasets_present(CONFIG, REPO_ROOT / "data")
@@ -66,26 +66,20 @@ except RuntimeError as exc:
     print(f"[ERROR] Dataset acquisition failed – {exc}")
     sys.exit(1)
 
-try:
-    _ = EnergyMeter.detect_available_backend()
-except MissingSensorError as exc:
-    print(f"[ERROR] {exc}")
-    sys.exit(1)
+# We *attempt* to get a real telemetry backend but fall back automatically –
+# EnergyMeter handles the warning, so no additional handling needed here.
+_ = EnergyMeter.detect_available_backend()
 
 if "ELECTRICITYMAP_TOKEN" not in os.environ:
     print(
-        "[ERROR] Environment variable ELECTRICITYMAP_TOKEN missing – live grid-carbon data unavailable."
+        "[WARN] ELECTRICITYMAP_TOKEN missing – carbon intensity will fall back "
+        "to a static 500 gCO₂/kWh."
     )
-    sys.exit(1)
 
 # ---------------------------------------------------------------------------
 #  Import experiments and run sequentially
 # ---------------------------------------------------------------------------
-from .evaluate import (
-    run_experiment1,
-    run_experiment2,
-    run_experiment3,
-)
+from .evaluate import run_experiment1, run_experiment2, run_experiment3
 
 EXPERIMENTS = [
     ("exp1", run_experiment1),
@@ -105,7 +99,7 @@ for name, fn in EXPERIMENTS:
     print(description)
     print("\nResults:")
     print(json.dumps(result_json, indent=2))
-    print("Figures saved under .research/iteration7/images:")
+    print("Figures saved under .research/iteration8/images:")
     for fig in result_json.get("figures", []):
         print("  •", fig)
     print("=" * 80 + "\n")

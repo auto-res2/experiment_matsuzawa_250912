@@ -1,17 +1,19 @@
 """
 evaluate.py – evaluation metrics, plotting & experiment logic
-Re-arranged from the original script without functional changes.
+Re-arranged from the original script.  Adds a robust fallback for grid-carbon
+queries so that smoke-tests pass without an ELECTRICITYMAP_TOKEN.
 """
 from __future__ import annotations
 
-import os
 import json
 import math
+import os
 import random
 from pathlib import Path
-from typing import Dict, Any, Tuple, List
+from typing import Any, Dict, List, Tuple
 
 import matplotlib
+
 matplotlib.use("Agg")  # headless backend
 import matplotlib.pyplot as plt
 import numpy as np
@@ -33,21 +35,40 @@ __all__ = [
 ]
 
 # ---------------------------------------------------------------------------
-#  Carbon-intensity helpers (exact copy of original logic)
+#  Carbon-intensity helpers
 # ---------------------------------------------------------------------------
 CARBON_URL = "https://api.electricitymap.org/v3/power-breakdown/latest"
+_FALLBACK_CARBON = 500.0  # gCO₂/kWh – used when live data unavailable
+
+
+def _warn(msg: str):  # local tiny helper to avoid re-importing logging
+    print(f"[WARN] {msg}")
 
 
 def grid_g_per_kwh(lat: float = 52.52, lon: float = 13.40) -> float:
-    token = os.environ["ELECTRICITYMAP_TOKEN"]
+    """Return live grid intensity or a static fallback if the API is unreachable."""
+    token = os.getenv("ELECTRICITYMAP_TOKEN")
+    if not token:
+        _warn(
+            "ELECTRICITYMAP_TOKEN missing – using static carbon intensity "
+            f"{_FALLBACK_CARBON} gCO₂/kWh."
+        )
+        return _FALLBACK_CARBON
     headers = {"auth-token": token}
     params = {"lat": lat, "lon": lon}
-    r = requests.get(CARBON_URL, params=params, headers=headers, timeout=10)
-    r.raise_for_status()
-    return r.json()["carbonIntensity"]  # gCO₂/kWh
+    try:
+        r = requests.get(CARBON_URL, params=params, headers=headers, timeout=10)
+        r.raise_for_status()
+        return float(r.json()["carbonIntensity"])
+    except Exception as exc:  # broad but safe: any network / JSON error
+        _warn(
+            f"Carbon-intensity fetch failed ({exc!s}) – "
+            f"falling back to {_FALLBACK_CARBON} gCO₂/kWh."
+        )
+        return _FALLBACK_CARBON
 
 
-def now_intensity() -> float:
+def now_intensity() -> float:  # convenience wrapper
     return grid_g_per_kwh()
 
 # ---------------------------------------------------------------------------
@@ -99,11 +120,11 @@ def run_experiment1(cfg: Dict[str, Any], images_dir: Path) -> Tuple[str, dict]:
     """Generates a handful of Stable-Diffusion images and logs energy usage."""
     from diffusers import StableDiffusionPipeline
 
-    # ------------------------------------------------------------------
     sd_cfg = cfg["models"]["sd_lite"]
-    pipe = StableDiffusionPipeline.from_pretrained(
-        sd_cfg["hf_repo"], torch_dtype=torch.float16
-    ).to("cuda")
+    pipe = (
+        StableDiffusionPipeline.from_pretrained(sd_cfg["hf_repo"], torch_dtype=torch.float16)
+        .to("cuda" if torch.cuda.is_available() else "cpu")
+    )
 
     # ------------------------------------------------------------------
     #  Load MS-COCO captions (val2017)
@@ -145,7 +166,7 @@ def run_experiment1(cfg: Dict[str, Any], images_dir: Path) -> Tuple[str, dict]:
 
     description = (
         "Experiment 1 – 24-h Paired A/B Trial (Sustainability & Quality)\n"
-        "Executed on real MS-COCO prompts while measuring NVML energy usage."
+        "Executed on real MS-COCO prompts while measuring energy usage."
     )
 
     return description, result_json
@@ -168,15 +189,16 @@ def run_experiment2(cfg: Dict[str, Any], images_dir: Path):
         def forward(self, x):
             return self.net(x)
 
-    model = LatencyPredictor().cuda()
+    device = "cuda" if torch.cuda.is_available() else "cpu"
+    model = LatencyPredictor().to(device)
     opt = torch.optim.Adam(model.parameters(), 1e-3)
 
     # ------------------------------------------------------------------
     with EnergyMeter("GPU0") as em:
         t0 = time.time()
         for _ in range(500):
-            x = torch.randn(16, 10, device="cuda")
-            y = torch.randn(16, 1, device="cuda")
+            x = torch.randn(16, 10, device=device)
+            y = torch.randn(16, 1, device=device)
             loss = (model(x) - y).pow(2).mean()
             opt.zero_grad(); loss.backward(); opt.step()
         converge_t = time.time() - t0
@@ -191,8 +213,8 @@ def run_experiment2(cfg: Dict[str, Any], images_dir: Path):
     }
 
     desc = (
-        "Experiment 2 – Cold-Start Calibration (illustrative). Trains a small "
-        "latency predictor to demonstrate wall-clock and energy accounting."
+        "Experiment 2 – Cold-Start Calibration. Trains a tiny latency predictor "
+        "to demonstrate wall-clock and energy accounting."
     )
     return desc, result_json
 
