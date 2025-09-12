@@ -14,11 +14,11 @@ from torch.utils.data import DataLoader
 
 try:
     from torch_geometric.nn import SAGEConv
-except ImportError as e:  # pragma: no cover – enforced at runtime
+except ImportError:  # pragma: no cover – enforced at runtime
     import sys
 
     sys.stderr.write(
-        "[FATAL] PyTorch-Geometric not found – install a build that matches your CUDA / PyTorch versions.\n"
+        "[FATAL] PyTorch-Geometric not available – install a build that matches your CUDA / PyTorch versions.\n"
     )
     sys.exit(2)
 
@@ -73,28 +73,45 @@ class CelesteGNN(nn.Module):
 
 
 # -----------------------------------------------------------------------------
-# Training loop (single epoch) – identical to the original implementation
+# Training loop (single epoch)
 # -----------------------------------------------------------------------------
 
 def train_one_epoch(
     model: nn.Module,
-    loader: DataLoader,  # noqa: D401 – single-object iterable in the demo
+    loader: DataLoader | list,  # the demo passes a plain list [data]
     criterion: nn.Module,
     optimiser: optim.Optimizer,
     device: torch.device,
 ) -> float:
-    """One stochastic/full batch epoch – returns the mean loss."""
+    """Perform one epoch and return the mean loss (per *sample*).
+
+    The original single-file implementation assumed a :class:`torch.utils.data.DataLoader`.
+    In the refactor we sometimes pass a plain list containing the full-batch
+    :class:`torch_geometric.data.Data` object.  Therefore we can no longer rely
+    on ``len(loader.dataset)``.  Instead we explicitly accumulate the number of
+    training *samples* (i.e. nodes whose ``train_mask`` is ``True``).
+    """
 
     model.train()
-    running_loss = 0.0
+    running_loss: float = 0.0
+    sample_count: int = 0
 
-    for batch in loader:  # in the demo ``loader`` is ``[data]``
+    # NOTE: `loader` may be a DataLoader **or** a list; the following works for both.
+    for batch in loader:
         optimiser.zero_grad(set_to_none=True)
         batch = batch.to(device)
+
         out = model(batch.x, batch.edge_index)
         loss = criterion(out[batch.train_mask], batch.y[batch.train_mask])
         loss.backward()
         optimiser.step()
-        running_loss += loss.item() * batch.num_graphs
 
-    return running_loss / len(loader.dataset)
+        this_batch_size = int(batch.train_mask.sum())
+        running_loss += loss.item() * this_batch_size
+        sample_count += this_batch_size
+
+    # Guard against division by zero (should never happen, but be explicit).
+    if sample_count == 0:
+        raise RuntimeError("[FATAL] No training samples were seen during the epoch – check train_mask generation.")
+
+    return running_loss / sample_count

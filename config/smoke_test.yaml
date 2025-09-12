@@ -1,6 +1,10 @@
 seed: 13
 device: "cuda"  # will automatically fall back to CPU if CUDA is unavailable
 
+# Dataset metadata is still required for validation in placeholder experiments,
+# but the smoke-test run itself uses the built-in KarateClub dataset and *does
+# not* download these large archives.
+
 datasets:
   temporal_ogbn_products:
     url: "https://snap.stanford.edu/ogb/data/node/ogbn_products.zip"

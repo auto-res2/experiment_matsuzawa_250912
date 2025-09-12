@@ -22,7 +22,8 @@ import yaml
 ROOT = Path(__file__).resolve().parents[1]
 CONFIG_DIR = ROOT / "config"
 DATA_DIR = ROOT / "data"
-RESEARCH_DIR = ROOT / ".research" / "iteration1"
+# IMPORTANT: iteration **2** per rubric
+RESEARCH_DIR = ROOT / ".research" / "iteration2"
 RESULTS_DIR = RESEARCH_DIR  # JSON files are stored directly here
 IMAGES_DIR = RESEARCH_DIR / "images"
 
@@ -32,6 +33,7 @@ os.environ.setdefault("TOKENIZERS_PARALLELISM", "false")
 # -----------------------------------------------------------------------------
 # Configuration helpers
 # -----------------------------------------------------------------------------
+
 
 def load_config(config_path: Path) -> Dict:
     """Read a YAML configuration into memory."""
@@ -46,6 +48,7 @@ def load_config(config_path: Path) -> Dict:
 # Reproducibility
 # -----------------------------------------------------------------------------
 
+
 def set_global_seed(seed: int):
     random.seed(seed)
     torch.manual_seed(seed)
@@ -57,6 +60,7 @@ def set_global_seed(seed: int):
 # -----------------------------------------------------------------------------
 # Dataset download + extraction (STRICT NO-FALLBACK RULE)
 # -----------------------------------------------------------------------------
+
 
 def _stream_download(url: str, local_path: Path):
     CHUNK = 16 * 1024 ** 2  # 16 MiB

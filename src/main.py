@@ -34,14 +34,6 @@ from .preprocess import (
 )
 from .train import CelesteGNN, train_one_epoch
 
-try:
-    from torch_geometric.datasets import OGBProducts
-except ImportError as e:  # pragma: no cover
-    sys.stderr.write(
-        "[FATAL] PyTorch-Geometric not found – please install the correct build.\n"
-    )
-    sys.exit(2)
-
 # -----------------------------------------------------------------------------
 # Core experiment logic (condensed EXP-1 replica)
 # -----------------------------------------------------------------------------
@@ -61,12 +53,40 @@ def _run_experiment_1(cfg: Dict, *, suffix: str) -> None:
         device_str = "cpu"
     device = torch.device(device_str)
 
-    ds_path = download_and_extract("temporal_ogbn_products", cfg)
-    dataset = OGBProducts(str(ds_path), preprocess="metapath2vec")
-    data = dataset[0]
+    # ------------------------------------------------------------------
+    # Dataset – tiny built-in set for smoke test; real OGB for full run
+    # ------------------------------------------------------------------
+    if suffix == "smoke":
+        try:
+            from torch_geometric.datasets import KarateClub
+        except ImportError:
+            sys.stderr.write("[FATAL] PyTorch-Geometric not available – cannot import KarateClub dataset.\n")
+            sys.exit(2)
+
+        dataset = KarateClub()
+        data = dataset[0]
+    else:
+        # Full experiment uses ogbn-products via OGB wrapper (requires `ogb`)
+        try:
+            from ogb.nodeproppred import PygNodePropPredDataset
+        except ImportError:
+            sys.stderr.write("[FATAL] Package 'ogb' not installed – required for full experiment runs.\n")
+            sys.exit(2)
+
+        ds_path = download_and_extract("temporal_ogbn_products", cfg)
+        dataset = PygNodePropPredDataset(name="ogbn-products", root=str(ds_path))
+        data = dataset[0]
+
+        # Flatten label tensor from (N, 1) → (N,)
+        if data.y.dim() == 2 and data.y.size(1) == 1:
+            data.y = data.y.view(-1)
+
+    # Ensure classification target is 0-based contiguous
+    if data.y.min() < 0:
+        raise RuntimeError("[FATAL] Negative class labels encountered – unsupported.")
 
     model = CelesteGNN(
-        in_channels=dataset.num_features, num_classes=dataset.num_classes
+        in_channels=dataset.num_features, num_classes=int(data.y.max().item()) + 1
     ).to(device)
 
     optimiser = optim.AdamW(
@@ -110,7 +130,7 @@ def _run_experiment_1(cfg: Dict, *, suffix: str) -> None:
 
     metrics = {
         "timestamp": datetime.utcnow().isoformat(),
-        "dataset": "temporal_ogbn_products (demo subset)",
+        "dataset": "karate_club (smoke)" if suffix == "smoke" else "ogbn-products",
         "epochs": epochs,
         "best_test_accuracy": best_acc,
         "train_loss_curve": train_losses,
@@ -127,10 +147,10 @@ def _run_experiment_1(cfg: Dict, *, suffix: str) -> None:
     # STDOUT for verification (requested by the rubric)
     print("\n--- EXPERIMENT DESCRIPTION --------------------------------------------------")
     print(
-        "Condensed replication of EXP-1 on Temporal-ogbn-products using the "
-        "minimal CELESTE backbone.\nFairness/DP noise and carbon budgeting are "
-        "omitted for brevity, but the optimiser setup and evaluation hooks are "
-        "identical to the full experiment."
+        "Condensed replication of EXP-1 on a tiny built-in dataset for the smoke\n"
+        "test and on ogbn-products for the full run.  Fairness/DP noise and\n"
+        "carbon budgeting are omitted for brevity, but the optimiser setup and\n"
+        "evaluation hooks are identical to the full experiment."
     )
     print("---------------------------------------------------------------------------\n")
     print(json.dumps(metrics, indent=2))
