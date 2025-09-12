@@ -1,0 +1,4 @@
+=== uv sync start Fri Sep 12 10:57:39 AM UTC 2025 ===
+=== uv install end Fri Sep 12 10:57:47 AM UTC 2025 ===
+=== [PHASE 1/2] Smoke test start Fri Sep 12 10:57:48 AM UTC 2025 ===
+[Dataset synth_small] ε=10.0 – epoch 1/1
