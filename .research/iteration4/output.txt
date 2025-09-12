@@ -1,0 +1,6 @@
+=== uv sync start Fri Sep 12 03:56:56 AM UTC 2025 ===
+=== uv install end Fri Sep 12 03:57:56 AM UTC 2025 ===
+=== [PHASE 1/2] Smoke test start Fri Sep 12 03:57:56 AM UTC 2025 ===
+2025-09-12 03:58:01,842 | INFO | __main__: === [smoke_test] Experiment start ===
+2025-09-12 03:58:01,844 | INFO | src.preprocess: Generating synthetic dataset with 100 samples…
+2025-09-12 03:58:03,551 | INFO | src.train: Training on device: cuda
