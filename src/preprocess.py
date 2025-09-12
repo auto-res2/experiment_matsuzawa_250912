@@ -80,12 +80,22 @@ def fetch_dataset(name: str, spec: Dict[str, Any], data_root: Path) -> Path:
     if not dl_path.exists():
         _download(url, dl_path, spec.get("size_bytes", 0), spec.get("sha256", ""))
 
-    # Auto-extract archives
+    # Auto-extract archives (optional, no-op for plain files) -------------
     extract_dir = data_root / name
     if tarfile.is_tarfile(dl_path):
         with tarfile.open(dl_path) as tar:
             tar.extractall(path=extract_dir)
     elif dl_path.suffix == ".zip":
         shutil.unpack_archive(str(dl_path), extract_dir=str(extract_dir))
+    else:
+        # Plain file – just ensure directory exists and symlink/copy inside.
+        extract_dir.mkdir(parents=True, exist_ok=True)
+        target = extract_dir / file_name
+        if not target.exists():
+            # Use a hard-link if possible, fall back to copy.
+            try:
+                target.hardlink_to(dl_path)
+            except OSError:
+                shutil.copy2(dl_path, target)
 
     return extract_dir

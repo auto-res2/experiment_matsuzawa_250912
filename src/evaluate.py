@@ -25,14 +25,14 @@ class MetricLogger:
         self._file = out_file
         atexit.register(self._dump)
 
-    # ---------------------------------------------------------------------
+    # ------------------------------------------------------------------
     def log_metric(self, name: str, value: Any, tag: Union[str, int, None] = None):
         if tag is None:
             self._metrics[name] = value
         else:
             self._metrics.setdefault(name, {})[str(tag)] = value
 
-    # ---------------------------------------------------------------------
+    # ------------------------------------------------------------------
     def _dump(self):
         # Ensure target directory exists
         self._file.parent.mkdir(parents=True, exist_ok=True)
@@ -43,9 +43,9 @@ class MetricLogger:
         print(json.dumps(self._metrics, indent=2))
         print("===================================\n")
 
-# -----------------------------------------------------------------------------
+# ----------------------------------------------------------------------------
 # Global singleton helpers
-# -----------------------------------------------------------------------------
+# ----------------------------------------------------------------------------
 
 LOGGER: Optional[MetricLogger] = None
 
@@ -77,12 +77,12 @@ def log_metric(name: str, value: Any, tag: Union[str, int, None] = None):
 
 
 # =============================================================================
-# Plotting helpers – All figures are saved under .research/iteration5/images
+# Plotting helpers – All figures are saved under .research/iteration6/images
 # =============================================================================
 
 def _resolve_fig_path(filename: Path) -> Path:
     """Force all figure paths to comply with mandatory directory structure."""
-    root = Path(".research/iteration5/images")
+    root = Path(".research/iteration6/images")
     root.mkdir(parents=True, exist_ok=True)
     # Keep only the stem provided by caller to avoid accidental directory
     # traversals while still making filenames unique.

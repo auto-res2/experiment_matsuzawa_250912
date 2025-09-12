@@ -1,7 +1,7 @@
 # Lightweight configuration – runs within seconds and does not download data
 experiment:
   name: cipher_omega_smoke
-  output_dir: .research/iteration5  # <-- mandatory directory
+  output_dir: .research/iteration6  # mandatory directory (updated)
   random_seed: 42
 
 hardware:

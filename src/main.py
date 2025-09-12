@@ -7,7 +7,6 @@ main.py – Single entry-point.  Supports the following command patterns:
 from __future__ import annotations
 
 import argparse
-import sys
 from pathlib import Path
 from typing import Dict, Any
 
@@ -64,13 +63,8 @@ def _run_experiments(cfg: Dict[str, Any]):
         exp_out_file = root_out / f"{ExpCls.name}.json"
         init_logger(exp_out_file)
 
-        try:
-            ExpCls(cfg, data_root).run()
-        except RuntimeError as e:
-            # Flush current logger before aborting so that partial results are not lost
-            close_logger()
-            print(f"\n[ABORT] {ExpCls.name}: {e}\n")
-            sys.exit(1)
+        # ----------------------------------------------------------------
+        ExpCls(cfg, data_root).run()
 
         # Graceful shutdown of logger to persist results before next experiment
         close_logger()
