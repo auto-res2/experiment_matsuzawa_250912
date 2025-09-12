@@ -22,10 +22,13 @@ from preprocess import load_graphs  # noqa: E402  pylint: disable=wrong-import-p
 from evaluate import log_metrics  # noqa: E402  pylint: disable=wrong-import-position
 
 # ---------------------------------------------------------------------------
-# Mandatory research output paths (iteration6 per new requirements)
+# Mandatory research output paths (iteration7 per new requirements)
 # ---------------------------------------------------------------------------
-JSON_DIR = Path(".research/iteration6").resolve()
+JSON_DIR = Path(".research/iteration7").resolve()
 JSON_DIR.mkdir(parents=True, exist_ok=True)
+
+# Ensure images directory exists even if unused – helps future plotting code
+(IMAGES_DIR := JSON_DIR / "images").mkdir(parents=True, exist_ok=True)
 
 # ---------------------------------------------------------------------------
 # Helper to run a single silo (non-federated for smoke/full demo)
