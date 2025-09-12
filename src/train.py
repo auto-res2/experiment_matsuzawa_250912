@@ -13,7 +13,8 @@ from typing import Dict, Any, List
 import torch
 from torch import nn, optim
 
-from .evaluate import (
+# NOTE: use absolute import to avoid "No parent module" static-analysis error
+from src.evaluate import (
     plot_training_loss,
     plot_calibration_bars,
     plot_uvec_violation,
@@ -23,7 +24,7 @@ from .evaluate import (
 #  Global paths (.research directory structure required by the assignment)
 # -----------------------------------------------------------------------------
 ROOT = Path(__file__).resolve().parent.parent
-RESEARCH_DIR = ROOT / ".research" / "iteration1"
+RESEARCH_DIR = ROOT / ".research" / "iteration2"  # <-- UPDATED path as mandated
 IMG_DIR = RESEARCH_DIR / "images"
 for _p in (RESEARCH_DIR, IMG_DIR):
     _p.mkdir(parents=True, exist_ok=True)
@@ -33,11 +34,13 @@ for _p in (RESEARCH_DIR, IMG_DIR):
 # -----------------------------------------------------------------------------
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
+
 def _safe_write_json(obj: Dict[str, Any], file_path: Path) -> None:
-    """Dump *obj* as pretty JSON and also print it for verification."""
+    """Dump *obj* as pretty JSON, save to .research/iteration2 and echo to STDOUT."""
     file_path.write_text(json.dumps(obj, indent=2))
     # stdout verification required by instructions
     print(json.dumps(obj, indent=2))
+
 
 # -----------------------------------------------------------------------------
 #  Minimal model stub – kept identical to the original implementation
@@ -51,6 +54,7 @@ class GCN_Critic(nn.Module):
 
     def forward(self, x):
         return self.net(x).squeeze(-1)
+
 
 # -----------------------------------------------------------------------------
 #  Experiment-1: Critic training (carbon A/B field-trial stub)
@@ -93,6 +97,7 @@ def run_experiment_1(cfg: Dict[str, Any]) -> None:
     plot_training_loss(history, fig_path)
     print("Figures generated:\n ", fig_path)
 
+
 # -----------------------------------------------------------------------------
 #  Experiment-2: Federated cost-model transfer / calibration-time bars
 # -----------------------------------------------------------------------------
@@ -128,6 +133,7 @@ def run_experiment_2(cfg: Dict[str, Any]) -> None:
     fig_path = IMG_DIR / "calibration_time_modes.pdf"
     plot_calibration_bars(calib, fig_path)
     print("Figures generated:\n ", fig_path)
+
 
 # -----------------------------------------------------------------------------
 #  Experiment-3: UVEC reliability study

@@ -1,0 +1,10 @@
+# config/smoke_test.yaml
+# Minimal configuration for CI smoke tests
+
+description: "Smoke-test configuration (epochs=2)"
+
+training:
+  critic_lr: 0.001
+  num_epochs: 2
+
+epsilons: [0.005, 0.01]

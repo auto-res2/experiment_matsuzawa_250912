@@ -1,0 +1,11 @@
+# config/full_experiment.yaml
+# Full-scale configuration (longer training) – values are still
+# modest to keep automated evaluation tractable.
+
+description: "Full experimental run"
+
+training:
+  critic_lr: 0.0003
+  num_epochs: 10
+
+epsilons: [0.005, 0.01, 0.02, 0.05]
