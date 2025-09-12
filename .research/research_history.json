@@ -1,0 +1,10 @@
+{
+  "research_topic": "離散拡散モデルの推論速度に関して改善したい",
+  "queries": [
+    "discrete diffusion acceleration",
+    "fast discrete diffusion sampling",
+    "efficient discrete diffusion inference",
+    "quantized diffusion inference",
+    "low latency diffusion sampling"
+  ]
+}
