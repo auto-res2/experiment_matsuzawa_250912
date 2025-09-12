@@ -1,0 +1,28 @@
+warning: No `requires-python` value found in the workspace. Defaulting to `>=3.11`.
+/home/toma/t-80-8-b-03/_work/experiment_matsuzawa_250912/experiment_matsuzawa_250912/.venv/lib/python3.11/site-packages/outdated/__init__.py:36: UserWarning: pkg_resources is deprecated as an API. See https://setuptools.pypa.io/en/latest/pkg_resources.html. The pkg_resources package is slated for removal as early as 2025-11-30. Refrain from using this package or pin to Setuptools<81.
+  from pkg_resources import parse_version
+Traceback (most recent call last):
+  File "<frozen runpy>", line 198, in _run_module_as_main
+  File "<frozen runpy>", line 88, in _run_code
+  File "/home/toma/t-80-8-b-03/_work/experiment_matsuzawa_250912/experiment_matsuzawa_250912/src/main.py", line 263, in <module>
+    main()
+  File "/home/toma/t-80-8-b-03/_work/experiment_matsuzawa_250912/experiment_matsuzawa_250912/src/main.py", line 245, in main
+    _run_experiment_1(full_cfg, suffix="full")
+  File "/home/toma/t-80-8-b-03/_work/experiment_matsuzawa_250912/experiment_matsuzawa_250912/src/main.py", line 79, in _run_experiment_1
+    dataset = PygNodePropPredDataset(name="ogbn-products", root=str(ogb_root))
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/toma/t-80-8-b-03/_work/experiment_matsuzawa_250912/experiment_matsuzawa_250912/.venv/lib/python3.11/site-packages/ogb/nodeproppred/dataset_pyg.py", line 68, in __init__
+    super(PygNodePropPredDataset, self).__init__(self.root, transform, pre_transform)
+  File "/home/toma/t-80-8-b-03/_work/experiment_matsuzawa_250912/experiment_matsuzawa_250912/.venv/lib/python3.11/site-packages/torch_geometric/data/in_memory_dataset.py", line 81, in __init__
+    super().__init__(root, transform, pre_transform, pre_filter, log,
+  File "/home/toma/t-80-8-b-03/_work/experiment_matsuzawa_250912/experiment_matsuzawa_250912/.venv/lib/python3.11/site-packages/torch_geometric/data/dataset.py", line 112, in __init__
+    self._download()
+  File "/home/toma/t-80-8-b-03/_work/experiment_matsuzawa_250912/experiment_matsuzawa_250912/.venv/lib/python3.11/site-packages/torch_geometric/data/dataset.py", line 229, in _download
+    self.download()
+  File "/home/toma/t-80-8-b-03/_work/experiment_matsuzawa_250912/experiment_matsuzawa_250912/.venv/lib/python3.11/site-packages/ogb/nodeproppred/dataset_pyg.py", line 125, in download
+    if decide_download(url):
+       ^^^^^^^^^^^^^^^^^^^^
+  File "/home/toma/t-80-8-b-03/_work/experiment_matsuzawa_250912/experiment_matsuzawa_250912/.venv/lib/python3.11/site-packages/ogb/utils/url.py", line 17, in decide_download
+    return input("This will download %.2fGB. Will you proceed? (y/N)\n" % (size)).lower() == "y"
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+EOFError: EOF when reading a line
