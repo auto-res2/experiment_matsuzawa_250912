@@ -1,38 +1,33 @@
-# config/full_experiment.yaml – identical to previous but kept for coherence
-version: 1.0
+# Full experimental configuration – will attempt to download / verify data.
+# NOTE: User must fill in *valid* dataset URL's and SHA-256 hashes.  Leaving
+# them empty will cause the run to terminate as per STRICT NO-FALLBACK RULE.
+
+experiment:
+  name: cipher_omega_full_suite
+  output_dir: .research/iteration4
+  random_seed: 42
 
 hardware:
   gpus: 8
-  vram_gb_per_gpu: 80
+  gpu_model: NVIDIA_A100
   ram_gb: 2048
-
-models:
-  mobilenet_v2_075:
-    hf_hub_id: "google/mobilenet_v2_0.75_160"
-    quantisation: "int8"
-  efficientnet_b0:
-    hf_hub_id: "timm/efficientnet_b0.ra_in1k"
-    quantisation: "int8"
-
-hyperparameters:
-  semm:
-    stable_matching_degree: 4
-    gossip_interval_s: 4
-    token_ttl_min: 30
-  zpf:
-    hidden_units: 256
-    tau_forget: 0.02
-  cibi:
-    gamma_bias_threshold: 0.1
-    lambda_causal: 0.1
+  vram_gb: 80
 
 datasets:
-  HiddenBias-Cars:
-    url: "https://raw.githubusercontent.com/github/explore/main/README.md"
-    sha256: "dummy"
-  Intersect-Faces:
-    url: "https://raw.githubusercontent.com/github/explore/main/README.md"
-    sha256: "dummy"
-  CubeSat-Drift:
-    url: "https://raw.githubusercontent.com/github/explore/main/README.md"
-    sha256: "dummy"
+  hiddenbias_cars:
+    url: ""     # <-- FILL WITH REAL URL
+    sha256: ""  # <-- FILL WITH REAL SHA-256
+    size_bytes: 0
+  intersect_faces:
+    url: ""
+    sha256: ""
+    size_bytes: 0
+  cubesat_drift:
+    url: ""
+    sha256: ""
+    size_bytes: 0
+
+train:
+  batch_size: 128
+  lr: 3.0e-4
+  epochs: 50

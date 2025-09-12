@@ -1,31 +1,30 @@
-# config/smoke_test.yaml – unchanged logical structure, kept for completeness
-version: 1.0
+# Lightweight configuration – runs within seconds and does not download data
+experiment:
+  name: cipher_omega_smoke
+  output_dir: .research/iteration4
+  random_seed: 42
 
 hardware:
-  gpus: 1
-  vram_gb_per_gpu: 1
+  gpus: 0  # smoke test runs on CPU only
+  gpu_model: none
   ram_gb: 2
-
-models:
-  mobilenet_v2_075:
-    hf_hub_id: "google/mobilenet_v2_0.75_160"
-    quantisation: "int8"
-
-after_smoke_only: true
-
-hyperparameters:
-  semm:
-    stable_matching_degree: 2
-    gossip_interval_s: 1
-    token_ttl_min: 5
-  zpf:
-    hidden_units: 32
-    tau_forget: 0.1
-  cibi:
-    gamma_bias_threshold: 0.5
-    lambda_causal: 0.0
+  vram_gb: 0
 
 datasets:
-  Tiny-Example:
-    url: "https://raw.githubusercontent.com/github/explore/main/README.md"
-    sha256: "dummy"
+  hiddenbias_cars:
+    url: ""  # intentionally empty – not needed for smoke test
+    sha256: ""
+    size_bytes: 0
+  intersect_faces:
+    url: ""
+    sha256: ""
+    size_bytes: 0
+  cubesat_drift:
+    url: ""
+    sha256: ""
+    size_bytes: 0
+
+train:
+  batch_size: 4
+  lr: 1.0e-3
+  epochs: 1

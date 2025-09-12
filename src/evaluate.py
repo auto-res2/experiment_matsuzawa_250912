@@ -1,67 +1,89 @@
-"""src/evaluate.py
-Computes toy "accuracy" metrics from cached dataset files to replace previous
-zero-only placeholders.
+"""
+evaluate.py – Logging, metric handling and light-weight visualisation
+utilities.  All functions are importable from other modules via
+``from .evaluate import ...``
 """
 from __future__ import annotations
 
+import atexit
+import json
 from pathlib import Path
-from typing import Dict, Any, List, Tuple
+from typing import Any, Dict, Union, Optional
 
-__all__ = [
-    "run_evaluation_pipeline",
-]
+import matplotlib
 
-_DATA_DIR = Path(__file__).resolve().parents[1] / "data"
+matplotlib.use("Agg")  # Always use non-interactive backend
+import matplotlib.pyplot as plt
 
-################################################################################
-# Helper utilities                                                             #
-################################################################################
+# =============================================================================
+# Metric logger (singleton) – persists results and echoes them to stdout
+# =============================================================================
 
-def _read_lines(file_path: Path) -> List[str]:
-    return file_path.read_text("utf-8", errors="ignore").splitlines()
+class MetricLogger:
+    def __init__(self, out_file: Path):
+        self._metrics: Dict[str, Any] = {}
+        self._file = out_file
+        atexit.register(self._dump)
 
-################################################################################
-# Evaluation                                                                   #
-################################################################################
+    # ---------------------------------------------------------------------
+    def log_metric(self, name: str, value: Any, tag: Union[str, int, None] = None):
+        if tag is None:
+            self._metrics[name] = value
+        else:
+            self._metrics.setdefault(name, {})[str(tag)] = value
 
-def _accuracy_for_file(file_path: Path) -> Tuple[int, int]:
-    """Toy accuracy: proportion of lines whose length is an even number."""
-    lines = _read_lines(file_path)
-    if not lines:
-        return 0, 0
-    correct = sum(1 for ln in lines if len(ln) % 2 == 0)
-    total = len(lines)
-    return correct, total
+    # ---------------------------------------------------------------------
+    def _dump(self):
+        self._file.parent.mkdir(parents=True, exist_ok=True)
+        with self._file.open("w", encoding="utf-8") as f:
+            json.dump(self._metrics, f, indent=2)
+        # Echo to stdout so that CI can pick it up immediately
+        print("\n=======  Experiment Results  =======")
+        print(json.dumps(self._metrics, indent=2))
+        print("===================================\n")
 
 
-def run_evaluation_pipeline(cfg: Dict[str, Any]) -> Dict[str, Any]:
-    dataset_cfg = cfg.get("datasets", {})
-    if not dataset_cfg:
-        raise RuntimeError("Configuration lacks 'datasets' – aborting.")
+# Global singleton instance – created via init_logger()
+LOGGER: Optional[MetricLogger] = None
 
-    per_ds_acc = {}
-    total_correct = 0
-    total_samples = 0
-    for name in sorted(dataset_cfg):
-        file_path = _DATA_DIR / f"{name}.dat"
-        if not file_path.exists():
-            raise RuntimeError(
-                f"Dataset file {file_path} missing – ensure preprocessing ran."
-            )
-        corr, tot = _accuracy_for_file(file_path)
-        acc = round(corr / tot, 4) if tot else 0.0
-        per_ds_acc[name] = acc
-        total_correct += corr
-        total_samples += tot
 
-    overall_acc = round(total_correct / total_samples, 4) if total_samples else 0.0
+def init_logger(out_path: Path):
+    """Instantiate the global logger. Must be called exactly once."""
+    global LOGGER
+    if LOGGER is None:
+        LOGGER = MetricLogger(out_path)
+    else:
+        raise RuntimeError("Logger already initialised – double initialisation")
 
-    # Dummy loss mirrors train metric shape for consistency
-    overall_loss = round(1.0 - overall_acc, 4)
 
-    return {
-        "eval_status": "completed",
-        "accuracy_per_dataset": per_ds_acc,
-        "overall_accuracy": overall_acc,
-        "overall_loss": overall_loss,
-    }
+def log_metric(name: str, value: Any, tag: Union[str, int, None] = None):
+    if LOGGER is None:
+        raise RuntimeError("Logger not initialised; call init_logger() first")
+    LOGGER.log_metric(name, value, tag)
+
+
+# =============================================================================
+# Plotting helpers – All figures are saved as *PDF* to comply with the paper
+# =============================================================================
+
+def save_line_plot(
+    x,
+    y,
+    xlabel: str,
+    ylabel: str,
+    title: str,
+    filename: Path,
+):
+    plt.figure()
+    plt.plot(x, y, label=title, marker="o")
+    for xi, yi in zip(x, y):
+        plt.annotate(f"{yi:.3f}", (xi, yi))
+    plt.xlabel(xlabel)
+    plt.ylabel(ylabel)
+    plt.title(title)
+    plt.legend()
+    plt.grid(True)
+    filename = filename.with_suffix(".pdf")
+    filename.parent.mkdir(parents=True, exist_ok=True)
+    plt.savefig(filename, bbox_inches="tight")
+    plt.close()

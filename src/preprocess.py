@@ -1,86 +1,91 @@
-"""src/preprocess.py
-Downloads (if necessary) all datasets declared in the YAML configuration and
-records simple numeric metrics (bytes, lines) to satisfy the *concrete data*
-requirement.  Files are cached in `data/` so that subsequent smoke-test runs do
-not re-download them.
+"""
+preprocess.py – Data downloading and verification utilities.  These functions
+are purposely stringent: any uncertainty (missing URL, size or checksum) leads
+to an immediate, explicit RuntimeError in compliance with the paper‘s
+STRICT NO-FALLBACK RULE.
 """
 from __future__ import annotations
 
 import hashlib
+import shutil
+import tarfile
 from pathlib import Path
 from typing import Dict, Any
 
 import requests
+from tqdm import tqdm
 
 __all__ = [
-    "run_preprocessing_pipeline",
+    "DataUnavailableError",
+    "fetch_dataset",
 ]
 
-_PROJECT_ROOT = Path(__file__).resolve().parents[1]
-_DATA_DIR = _PROJECT_ROOT / "data"
-_DATA_DIR.mkdir(exist_ok=True)
 
-################################################################################
-# Utility helpers                                                              #
-################################################################################
+class DataUnavailableError(RuntimeError):
+    """Raised when a dataset cannot be downloaded or verified."""
 
-def _sha256_file(path: Path) -> str:
-    h = hashlib.sha256()
-    with path.open("rb") as f:
-        for chunk in iter(lambda: f.read(8192), b""):
-            h.update(chunk)
-    return h.hexdigest()
 
-################################################################################
-# Main API                                                                     #
-################################################################################
+# -----------------------------------------------------------------------------
+# Internal helpers
+# -----------------------------------------------------------------------------
 
-def run_preprocessing_pipeline(cfg: Dict[str, Any]) -> Dict[str, Any]:
-    datasets = cfg.get("datasets", {})
-    if not datasets:
-        raise RuntimeError("Configuration missing required 'datasets' section.")
+_CHUNK = 1 << 20  # 1 MiB
 
-    metrics: Dict[str, Dict[str, int | str]] = {}
-    total_bytes = 0
-    total_lines = 0
 
-    for name, info in datasets.items():
-        url = info.get("url")
-        if not url:
-            raise RuntimeError(f"Dataset '{name}' lacks URL – aborting.")
-        dest_file = _DATA_DIR / f"{name}.dat"
+def _download(url: str, target: Path, expected_size: int, sha256: str):
+    """Download *url* → *target* and verify size / SHA-256 checksum."""
 
-        if not dest_file.exists():
-            # Download with a small timeout to avoid hanging CI
-            resp = requests.get(url, timeout=15)
-            if resp.status_code >= 400:
-                raise RuntimeError(
-                    f"Failed to download dataset '{name}' – HTTP {resp.status_code}."
-                )
-            dest_file.write_bytes(resp.content)
+    with requests.get(url, stream=True, timeout=30) as r:
+        if r.status_code != 200:
+            raise DataUnavailableError(f"Cannot download {url} – HTTP {r.status_code}")
+        total = int(r.headers.get("content-length", 0))
+        if expected_size and total and total != expected_size:
+            raise DataUnavailableError("Remote file size mismatch – aborting.")
 
-        # Optional checksum verification (skipped if 'dummy')
-        given_sha = str(info.get("sha256", "")).lower()
-        if given_sha and given_sha != "dummy":
-            actual_sha = _sha256_file(dest_file)
-            if actual_sha != given_sha.lower():
-                raise RuntimeError(
-                    f"SHA-256 mismatch for dataset '{name}': expected {given_sha}, got {actual_sha}."
-                )
+        with target.open("wb") as f, tqdm(total=total, unit="B", unit_scale=True) as pbar:
+            for chunk in r.iter_content(chunk_size=_CHUNK):
+                f.write(chunk)
+                pbar.update(len(chunk))
 
-        # Collect simple metrics
-        file_bytes = dest_file.stat().st_size
-        file_lines = dest_file.read_text("utf-8", errors="ignore").count("\n")
-        total_bytes += file_bytes
-        total_lines += file_lines
-        metrics[name] = {
-            "bytes": file_bytes,
-            "lines": file_lines,
-        }
+    # ---------------------------------------------------------------------
+    # Checksum verification
+    if sha256:
+        m = hashlib.sha256()
+        with target.open("rb") as f:
+            for chunk in iter(lambda: f.read(_CHUNK), b""):
+                m.update(chunk)
+        if m.hexdigest() != sha256.lower():
+            raise DataUnavailableError("SHA-256 mismatch – dataset corrupted.")
 
-    return {
-        "preprocess_status": "completed",
-        "datasets": metrics,
-        "total_bytes": total_bytes,
-        "total_lines": total_lines,
-    }
+
+# -----------------------------------------------------------------------------
+# Public API
+# -----------------------------------------------------------------------------
+
+def fetch_dataset(name: str, spec: Dict[str, Any], data_root: Path) -> Path:
+    """Download/extract *name* according to *spec* into *data_root*.
+
+    Returns the path to the extracted dataset.  Raises DataUnavailableError on
+    any failure.
+    """
+
+    url: str | None = spec.get("url")
+    if not url:
+        raise DataUnavailableError(
+            f"Dataset '{name}' has no download URL – cannot continue."
+        )
+
+    file_name = Path(url).name
+    dl_path = data_root / file_name
+    if not dl_path.exists():
+        _download(url, dl_path, spec.get("size_bytes", 0), spec.get("sha256", ""))
+
+    # Auto-extract archives
+    extract_dir = data_root / name
+    if tarfile.is_tarfile(dl_path):
+        with tarfile.open(dl_path) as tar:
+            tar.extractall(path=extract_dir)
+    elif dl_path.suffix == ".zip":
+        shutil.unpack_archive(str(dl_path), extract_dir=str(extract_dir))
+
+    return extract_dir

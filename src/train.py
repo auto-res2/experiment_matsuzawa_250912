@@ -1,80 +1,113 @@
-"""src/train.py
-Updated to compute simple numeric metrics from the cached dataset files so that
-result JSON contains non-trivial, reproducible values.  The routine remains
-light-weight and finishes in <1 s even on constrained CI runners.
+"""
+train.py – Contains experiment super-classes and concrete experiment
+implementations that (optionally) train models or run simulations.
+All heavy-weight operations are skipped when cfg.get("smoke_test", False)
+         is True so that the smoke-test finishes within a few seconds and
+         without external resources.
 """
 from __future__ import annotations
 
-import math
+from abc import ABC, abstractmethod
 from pathlib import Path
-from typing import Dict, Any, List
+from typing import Dict, Any
 
-__all__ = [
-    "run_training_pipeline",
-]
+from .preprocess import fetch_dataset, DataUnavailableError
+from .evaluate import log_metric
 
-_DATA_DIR = Path(__file__).resolve().parents[1] / "data"
+# ==========================================================================
+# Base experiment class
+# ==========================================================================
 
-################################################################################
-# Helper functions                                                             #
-################################################################################
+class Experiment(ABC):
+    """Common abstract base class for every experiment."""
 
-def _read_lines(file_path: Path) -> List[str]:
-    """Read UTF-8 lines, stripping newlines.  Binary errors are ignored."""
-    try:
-        return file_path.read_text(encoding="utf-8", errors="ignore").splitlines()
-    except Exception as e:  # pragma: no cover – fatal
-        raise RuntimeError(f"Unable to read dataset file {file_path}: {e}") from e
+    def __init__(self, cfg: Dict[str, Any], data_root: Path):
+        self.cfg = cfg
+        self.data_root = data_root
+        self.smoke = bool(cfg.get("smoke_test", False))
 
-################################################################################
-# Public API                                                                   #
-################################################################################
+    # ------------------------------------------------------------------
+    @abstractmethod
+    def run(self):
+        """Execute the experiment. MUST call log_metric for every result."""
 
-def run_training_pipeline(cfg: Dict[str, Any]) -> Dict[str, Any]:
-    """Ultra-lightweight numeric placeholder that *does something* with data.
 
-    We emulate a "training loss" by treating each dataset file as a collection
-    of documents and computing a toy error based on word-frequency entropy.
-    This yields deterministic, non-zero floating-point values that qualify as
-    *concrete experimental data* while staying computationally negligible.
-    """
-    dataset_cfg = cfg.get("datasets", {})
-    if not dataset_cfg:
-        raise RuntimeError("Configuration lacks the 'datasets' section – aborting.")
+# ==========================================================================
+# Concrete experiments originally shipped in the monolithic script
+# ==========================================================================
 
-    losses: Dict[str, float] = {}
-    for name in sorted(dataset_cfg):
-        file_path = _DATA_DIR / f"{name}.dat"
-        if not file_path.exists():
-            raise RuntimeError(
-                f"Expected dataset cache at {file_path} – preprocessing step must run first."
-            )
+class Align16Experiment(Experiment):
+    """End-to-End Alignment Test-bed (simulation)."""
 
-        # --- Toy loss: Shannon entropy of word frequency distribution ---------
-        words: List[str] = []
-        for line in _read_lines(file_path):
-            words.extend(line.split())
-        if not words:
-            losses[name] = 0.0
-            continue
+    name = "ALIGN-16"
 
-        # Frequency of each unique token
-        total = len(words)
-        freq: Dict[str, int] = {}
-        for w in words:
-            freq[w] = freq.get(w, 0) + 1
-        entropy = -sum((c / total) * math.log2(c / total) for c in freq.values())
+    def run(self):
+        print("Running ALIGN-16 experiment – End-to-End Alignment Test-bed\n")
 
-        # Normalise by log2(|V|) so range ∈ [0,1]
-        normalised_entropy = entropy / math.log2(max(len(freq), 2))
-        losses[name] = round(normalised_entropy, 4)
+        if self.smoke:
+            # Fast path: just record that the experiment would run.
+            log_metric("status", "skipped_in_smoke", tag=self.name)
+            return
 
-    # Aggregate: mean loss across datasets
-    mean_loss = round(sum(losses.values()) / max(len(losses), 1), 4)
+        # -----------------------------------------------------------------
+        # 1. Ensure dataset availability (will raise if missing)
+        fetch_dataset(
+            "hiddenbias_cars",
+            self.cfg["datasets"]["hiddenbias_cars"],
+            self.data_root,
+        )
 
-    return {
-        "train_status": "completed",
-        "loss_per_dataset": losses,
-        "mean_loss": mean_loss,
-        "cfg_hash": hash(str(cfg)) & 0xFFFFFFFF,
-    }
+        # NOTE: A full Omnet++ + timing-accurate simulation cannot be shipped
+        # in this compact sample.  We *explicitly* abort so that callers see a
+        # clean, policy-compliant error instead of half-baked placeholders.
+        raise RuntimeError(
+            "ALIGN-16 requires the proprietary Omnet++ simulation and the "
+            "HiddenBias-Cars dataset, which are NOT accessible. Execution "
+            "terminated as per STRICT NO-FALLBACK RULE."
+        )
+
+
+class HIL12Experiment(Experiment):
+    """Hardware-in-the-Loop experiment."""
+
+    name = "HIL-12"
+
+    def run(self):
+        print("Running HIL-12 Hardware-in-the-Loop experiment\n")
+
+        if self.smoke:
+            log_metric("status", "skipped_in_smoke", tag=self.name)
+            return
+
+        fetch_dataset(
+            "cubesat_drift",
+            self.cfg["datasets"]["cubesat_drift"],
+            self.data_root,
+        )
+        raise RuntimeError(
+            "HIL-12 requires physical MCU hardware and CubeSat-Drift trace, "
+            "which are not publicly downloadable – aborting."
+        )
+
+
+class Face80Experiment(Experiment):
+    """Causal & Intersectional Bias Audit."""
+
+    name = "FACE-80"
+
+    def run(self):
+        print("Running FACE-80 Causal & Intersectional Bias Audit\n")
+
+        if self.smoke:
+            log_metric("status", "skipped_in_smoke", tag=self.name)
+            return
+
+        fetch_dataset(
+            "intersect_faces",
+            self.cfg["datasets"]["intersect_faces"],
+            self.data_root,
+        )
+        raise RuntimeError(
+            "FACE-80 requires the Intersect-Faces dataset (1 M images) which "
+            "is not publicly accessible here – aborting execution."
+        )

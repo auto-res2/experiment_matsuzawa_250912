@@ -1,19 +1,16 @@
 [project]
-name = "cipher-omega"
-version = "0.1.1"
-description = "Refactored scaffold for the CIPHER-Ω continual-learning experiments"
-readme = "README.md"
+name = "cipher_omega"
+version = "0.1.0"
 requires-python = ">=3.9"
 
+# *Array* style dependency declaration is mandatory per task instructions.
 dependencies = [
-  "PyYAML>=6.0",
-  "requests>=2.31.0",
-  "torch>=1.9.0",
-  "numpy>=1.23"
+  "pyyaml>=6.0",
+  "tqdm>=4.64",
+  "requests>=2.31",
+  "matplotlib>=3.6"
 ]
 
-[tool.setuptools]
-package-dir = {"" = "src"}
-
-[tool.setuptools.package-data]
-"" = ["*.yaml"]
+[build-system]
+requires = ["setuptools>=65.0", "wheel"]
+build-backend = "setuptools.build_meta"
