@@ -13,6 +13,8 @@ import sys
 import tarfile
 import tempfile
 import zipfile
+import errno
+import shutil
 from pathlib import Path
 from typing import Tuple
 
@@ -51,8 +53,22 @@ def _sha256(path: Path, block: int = 65536) -> str:
 
 
 def fetch(url: str, sha256: str, dest_dir: Path) -> Path:
+    """Download an archive with checksum verification (no silent fallbacks).
+
+    A temporary file is first written to the default system temp directory.
+    It is then *moved* into `dest_dir`.  On some CI systems `/tmp` resides
+    on a different mount point than the working directory, so a plain
+    `os.replace` would raise `EXDEV`.  We therefore catch this specific
+    error code and fall back to a copy-and-remove sequence that is
+    functionally equivalent while remaining atomic enough for our use
+    case.  All other exceptions are re-raised to honour the fail-fast
+    policy.
+    """
+    dest_dir = Path(dest_dir)
     dest_dir.mkdir(parents=True, exist_ok=True)
     fname = dest_dir / os.path.basename(url.split("?", 1)[0])
+
+    # If the file already exists and the checksum matches we are done.
     if fname.exists() and _sha256(fname) == sha256:
         return fname
 
@@ -62,10 +78,21 @@ def fetch(url: str, sha256: str, dest_dir: Path) -> Path:
         sys.exit(f"ERROR: {url} returned {r.status_code} – abort (NO FALLBACK)")
 
     with tempfile.NamedTemporaryFile(delete=False) as tmp:
-        for chunk in r.iter_content(1024 * 1024):
+        for chunk in r.iter_content(1024 * 1024):  # 1-MiB chunks
             tmp.write(chunk)
-    os.replace(tmp.name, fname)
+    tmp_path = Path(tmp.name)
 
+    try:
+        os.replace(tmp_path, fname)
+    except OSError as e:
+        if e.errno == errno.EXDEV:
+            # Cross-device move – fall back to copy + delete (no silent alt).
+            shutil.copy2(tmp_path, fname)
+            tmp_path.unlink()
+        else:
+            raise
+
+    # Verify checksum post-move / copy.
     if _sha256(fname) != sha256:
         sys.exit("ERROR: SHA-256 mismatch – abort (NO FALLBACK)")
     return fname
@@ -87,6 +114,7 @@ def extract(archive: Path, dest: Path):
 # ---------------------------------------------------------------------------
 # Dataset access – Tiny-ImageNet as minimal reproducible example.
 # ---------------------------------------------------------------------------
+
 
 def _wrap_dict(ds: torch.utils.data.Dataset) -> torch.utils.data.Dataset:
     """Return a *dict*-style view so that training code can stay framework-agnostic."""

@@ -97,7 +97,7 @@ def _run_experiment(cfg: dict, smoke: bool):
         "emb2_error_perc": emb_err,
     }
 
-    res_dir = Path(".research/iteration8")
+    res_dir = Path(".research/iteration9")
     res_dir.mkdir(parents=True, exist_ok=True)
     fname = res_dir / ("results_smoke.json" if smoke else "results_full.json")
     with fname.open("w") as fp:

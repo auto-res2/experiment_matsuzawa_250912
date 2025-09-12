@@ -70,10 +70,13 @@ def emb2_error(
 # ---------------------------------------------------------------------------
 
 def _ensure_img_dir() -> Path:
-    # According to the task instructions all images *must* reside in this
-    # directory for iteration 8.  We centralise the logic here so that a
-    # single helper call guarantees compliance for every script.
-    img_dir = Path(".research/iteration8/images")
+    """Return the canonical directory for all plots (iteration 9).
+
+    The task description mandates that *all* image assets are placed under
+    `.research/iteration9/images`.  Centralising the logic here guarantees
+    compliance across the entire code base with a single function call.
+    """
+    img_dir = Path(".research/iteration9/images")
     img_dir.mkdir(parents=True, exist_ok=True)
     return img_dir
 
