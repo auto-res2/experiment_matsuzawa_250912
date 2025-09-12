@@ -1,10 +1,10 @@
+from __future__ import annotations
+
 """src/preprocess.py
 Data-loading utilities.  They intentionally fail fast if a dataset is not
 accessible – the original code followed a strict no-fallback policy which we
 retain.
 """
-
-from __future__ import annotations
 
 import sys
 from typing import Any
@@ -18,13 +18,20 @@ __all__ = [
 
 
 def get_wmt14(split: str, proportion: float = 1.0):
-    """Return a (potentially down-sampled) slice of WMT14 En↔De."""
+    """Return a (potentially down-sampled) slice of WMT14 En↔De.
+
+    The function guarantees that at least *one* element is returned whenever
+    the underlying dataset is accessible so that downstream code never runs
+    into empty-slice statistics during a smoke test.
+    """
     try:
         ds = load_dataset("wmt14", "de-en", split=split)
         if proportion < 1.0:
-            ds = ds.shuffle(seed=42).select(range(int(len(ds) * proportion)))
+            # Guarantee ≥1 example so that the smoke test cannot under-sample to 0.
+            k = max(1, int(len(ds) * proportion))
+            ds = ds.shuffle(seed=42).select(range(k))
         return ds
-    except Exception as exc:
+    except Exception as exc:  # pragma: no cover – strict fail-fast policy
         sys.exit(f"[ERROR] Failed to prepare WMT14: {exc}")
 
 

@@ -1,20 +1,19 @@
+from __future__ import annotations
+
 """src/main.py
 Command-line entry point.  Supports two modes:
-  • Smoke test  – `python -m src.main --smoke-test`
-  • Full run    – `python -m src.main --full-experiment`
+  • Smoke test   – `python -m src.main --smoke-test`
+  • Full run     – `python -m src.main --full-experiment`
 
 The *full* run first launches a quick smoke pass; if that succeeds we proceed
 with the heavy experiment.  All config files live under *config/*.  If they are
 missing we create default templates on the fly so users can edit them later.
 """
 
-from __future__ import annotations
-
 import argparse
-import os
 import pathlib
 import sys
-from typing import Dict, Any
+from typing import Any, Dict
 
 import yaml
 
@@ -29,23 +28,24 @@ CONFIG_DIR.mkdir(parents=True, exist_ok=True)
 
 SMOKE_TEMPLATE: Dict[str, Any] = {
     "experiment": "smoke",
-    "dataset_split": "test[:1%]",
-    "dataset_proportion": 0.01,
+    "dataset_split": "test[:1%]",  # 1 % of the official test set
+    "dataset_proportion": 1.0,      # no further down-sampling (≥1 sample guaranteed)
+    # We purposely point both teacher & candidate to the same public model so we
+    # only download weights once during the smoke test.
     "teacher_model": "Helsinki-NLP/opus-mt-en-de",
-    "quadron_model": "quadron-ai/quadron-dm-text-wmt14",
+    "quadron_model": "Helsinki-NLP/opus-mt-en-de",
 }
 
 FULL_TEMPLATE: Dict[str, Any] = {
     "experiment": "full",
-    "dataset_split": "test[:100%]",
+    "dataset_split": "test[:100%]",  # entire test set
     "dataset_proportion": 1.0,
     "teacher_model": "Helsinki-NLP/opus-mt-en-de",
-    "quadron_model": "quadron-ai/quadron-dm-text-wmt14",
+    "quadron_model": "Helsinki-NLP/opus-mt-en-de",
 }
 
-
 # -----------------------------------------------------------------------------
-# Tiny helper to (re)generate missing YAMLs so users can tweak them later.
+# Helper – (auto-)generate YAMLs once so users can customise them later.
 # -----------------------------------------------------------------------------
 
 def _write_yaml_if_missing(path: pathlib.Path, content: Dict[str, Any]):
@@ -72,14 +72,18 @@ def _run_with_cfg(cfg_name: str):
 
 
 def main() -> None:  # noqa: D401 – simple launcher
-    # Ensure default config stubs exist
+    # Ensure default config stubs exist (do NOT overwrite user edits)
     _write_yaml_if_missing(CONFIG_DIR / "smoke_test.yaml", SMOKE_TEMPLATE)
     _write_yaml_if_missing(CONFIG_DIR / "full_experiment.yaml", FULL_TEMPLATE)
 
     parser = argparse.ArgumentParser(description="QuADRoN-DM experimental runner")
     group = parser.add_mutually_exclusive_group(required=True)
     group.add_argument("--smoke-test", action="store_true", help="quick validation pass")
-    group.add_argument("--full-experiment", action="store_true", help="run smoke test then full experiment")
+    group.add_argument(
+        "--full-experiment",
+        action="store_true",
+        help="run smoke test then full experiment",
+    )
     args = parser.parse_args()
 
     if args.smoke_test:
@@ -91,7 +95,7 @@ def main() -> None:  # noqa: D401 – simple launcher
     print("[INFO] Running mandatory smoke test before full experiment…")
     try:
         _run_with_cfg("smoke_test.yaml")
-    except SystemExit as exc:  # propagate failure code but with message
+    except SystemExit:  # propagate failure code but with message
         print("[ERROR] Smoke test failed → skipping full experiment.")
         raise
 

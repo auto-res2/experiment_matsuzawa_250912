@@ -3,8 +3,8 @@ name = "quadron_experiment"
 version = "0.1.0"
 description = "Refactored QuADRoN-DM experimental framework"
 
-# Array style per instructions – keeps dependency ordering explicit and avoids
-# unwanted TOML tables that could create circular-import issues.
+# Explicit dependency list – ordering matters only for readability but avoids
+# unwanted implicit upgrades.
 dependencies = [
     "numpy>=1.21.0",
     "torch>=1.9.0",
@@ -16,4 +16,5 @@ dependencies = [
     "pynvml>=11.4.1",
     "sacrebleu>=2.3.0",
     "pyyaml>=6.0",
+    "sentencepiece>=0.1.99",  # required for many HF tokenizers (e.g. opus-mt)
 ]

@@ -1,33 +1,33 @@
+from __future__ import annotations
+
 """src/evaluate.py
 Evaluation utilities, quality metrics and the primary Experiment-1 benchmark
 (text track on WMT14).  All heavy computation happens here so that *main.py*
 remains a thin orchestrator.
 """
 
-from __future__ import annotations
-
 import json
-import time
 import pathlib
+import time
 from dataclasses import dataclass
 from typing import Any, Dict, List
 
-import numpy as np
 import matplotlib.pyplot as plt
+import numpy as np
 import seaborn as sns
 import torch
 from sacrebleu import corpus_bleu
 from transformers import AutoTokenizer
 
 # Third-party helpers that live in this repository
-from .train import load_hf_model
 from .preprocess import get_wmt14
+from .train import load_hf_model
 
 # -----------------------------------------------------------------------------
-# I/O locations – fixed relative to project root
+# I/O locations  –  ALL artefacts for *iteration2* live under .research/iteration2
 # -----------------------------------------------------------------------------
 ROOT_DIR = pathlib.Path(__file__).resolve().parent.parent
-RESULT_DIR = ROOT_DIR / ".research" / "iteration1"
+RESULT_DIR = ROOT_DIR / ".research" / "iteration2"
 IMAGES_DIR = RESULT_DIR / "images"
 for _d in (RESULT_DIR, IMAGES_DIR):
     _d.mkdir(parents=True, exist_ok=True)
@@ -36,7 +36,7 @@ for _d in (RESULT_DIR, IMAGES_DIR):
 # Optional power/thermal support via NVML
 # -----------------------------------------------------------------------------
 try:
-    import pynvml  # noqa: WPS433  (external dependency)
+    import pynvml  # noqa: WPS433 – optional external dependency
 
     pynvml.nvmlInit()
     _NVML_AVAILABLE = True
@@ -79,17 +79,25 @@ def experiment1(cfg: Dict[str, Any]) -> Dict[str, float]:
     """Latency / Energy / Quality on WMT14 En→De (teacher vs. QuADRoN-DM)."""
 
     exp_name = "experiment1_text_wmt14"
+
+    # ------------------------------------------------------------------
+    # Model & tokenizer loading
+    # ------------------------------------------------------------------
     tokenizer = AutoTokenizer.from_pretrained(cfg["teacher_model"])
-    teacher = load_hf_model(cfg["teacher_model"])  # not used yet but ready for extensions
+    # Teacher currently unused in the metric loop but loaded to stay close to
+    # the paper setup and to allow easy future extensions/ablations.
+    _ = load_hf_model(cfg["teacher_model"])
     quadron = load_hf_model(cfg["quadron_model"])
 
     # ------------------------------------------------------------------
-    # Data preparation
+    # Data preparation – the helper guarantees ≥1 sample
     # ------------------------------------------------------------------
     ds = get_wmt14(cfg["dataset_split"], proportion=cfg["dataset_proportion"])
-    stats: List[ExampleStats] = []
+    if len(ds) == 0:
+        raise RuntimeError("Dataset slice is empty – reduce down-sampling or fix split.")
 
-    device = next(quadron.parameters()).device  # robust way to detect placement
+    stats: List[ExampleStats] = []
+    device = next(quadron.parameters()).device  # robust detection of placement
 
     # ------------------------------------------------------------------
     # Main loop – sample-level measurements for fine-grained histograms.
@@ -111,7 +119,7 @@ def experiment1(cfg: Dict[str, Any]) -> Dict[str, float]:
         stats.append(ExampleStats(latency_ms, energy_j, bleu))
 
     # ------------------------------------------------------------------
-    # Aggregate & persist
+    # Aggregate & persist as JSON  (rule: store under .research/iteration2/)
     # ------------------------------------------------------------------
     latencies = np.array([s.latency_ms for s in stats])
     energies = np.array([s.energy_j for s in stats])
