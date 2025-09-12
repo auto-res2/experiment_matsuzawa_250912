@@ -16,7 +16,7 @@ sns.set_theme(style="whitegrid")
 #   Paths – mandatory locations (see instructions)
 # -----------------------------------------------------------------------------
 
-_RESULTS = pathlib.Path(".research/iteration7/images")
+_RESULTS = pathlib.Path(".research/iteration8/images")
 _RESULTS.mkdir(parents=True, exist_ok=True)
 
 __all__ = [
