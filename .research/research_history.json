@@ -1,11 +1,11 @@
 {
   "research_topic": "Diffusion Transformersの学習時のメモリ改善",
   "queries": [
-    "memory-efficient diffusion transformer",
-    "diffusion transformer memory optimization",
-    "gradient checkpointing diffusion transformer",
-    "activation recomputation diffusion model",
-    "low-memory transformer training"
+    "diffusion transformer memory",
+    "memory-efficient diffusion",
+    "gradient checkpointing diffusion",
+    "sparse attention diffusion",
+    "mixed precision diffusion"
   ],
   "research_study_list": [
     {
